@@ -10,6 +10,7 @@ export interface UserData {
   goal: number; // Target days
   history: StreakHistoryItem[];
   uid?: string;
+  showMotivation?: boolean;
 }
 
 export interface MotivationResponse {

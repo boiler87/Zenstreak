@@ -8,26 +8,35 @@ import {
   Flame, 
   User as UserIcon,
   LogOut,
-  BrainCircuit,
   PenLine,
   Check,
   X,
-  Calendar,
+  Calendar as CalendarIcon,
   ArrowRight,
   Calculator,
   AlertTriangle,
   Edit2,
   Trash2,
   Save,
-  Target
+  Target,
+  ChevronLeft,
+  ChevronRight,
+  Sparkles,
+  RefreshCw,
+  ArrowUpDown,
+  ListFilter,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import { 
   BarChart,
   Bar,
-  Cell,
   XAxis,
+  YAxis,
+  CartesianGrid,
   Tooltip, 
-  ResponsiveContainer
+  ResponsiveContainer,
+  Cell
 } from 'recharts';
 
 import { UserData, StreakHistoryItem } from './types';
@@ -75,6 +84,97 @@ const LoadingSpinner = () => (
     <div className="w-8 h-8 border-4 border-current border-t-transparent rounded-full animate-spin"></div>
   </div>
 );
+
+const StreakCalendar = ({ activeDates, overlapDates }: { activeDates: Set<string>, overlapDates: Set<string> }) => {
+  const [currentDate, setCurrentDate] = useState(new Date());
+
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDayOfMonth = new Date(year, month, 1).getDay(); // 0 = Sunday
+
+  const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
+  const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
+
+  const days = [];
+  // Empty slots for start of month
+  for (let i = 0; i < firstDayOfMonth; i++) {
+    days.push(<div key={`empty-${i}`} className="h-8 w-full" />);
+  }
+
+  const todayStr = toLocalDateString(Date.now());
+
+  for (let i = 1; i <= daysInMonth; i++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+    const isActive = activeDates.has(dateStr);
+    const isOverlap = overlapDates.has(dateStr);
+    const isToday = dateStr === todayStr;
+
+    days.push(
+      <div 
+        key={dateStr} 
+        className={`
+          h-8 w-full flex items-center justify-center rounded-lg text-xs font-medium transition-all relative select-none
+          ${isOverlap 
+             ? 'bg-orange-500 text-white font-bold shadow-[0_0_10px_rgba(249,115,22,0.3)]' 
+             : isActive 
+                 ? 'bg-primary text-black font-bold shadow-[0_0_10px_rgba(20,184,166,0.3)]' 
+                 : 'text-slate-400 hover:bg-slate-800'
+          }
+          ${isToday && !isActive && !isOverlap ? 'border border-primary text-primary' : ''}
+          ${isToday && (isActive || isOverlap) ? 'ring-2 ring-white' : ''}
+        `}
+      >
+        {i}
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-surface p-4 rounded-2xl border border-slate-700 w-full animate-fade-in">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-white font-bold text-sm md:text-base capitalize flex items-center gap-2">
+           <CalendarIcon size={16} className="text-primary"/>
+           {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
+        </h3>
+        <div className="flex gap-1">
+          <button onClick={prevMonth} className="p-1.5 hover:bg-slate-700 rounded-lg text-secondary hover:text-white transition-colors">
+            <ChevronLeft size={18} />
+          </button>
+          <button onClick={nextMonth} className="p-1.5 hover:bg-slate-700 rounded-lg text-secondary hover:text-white transition-colors">
+            <ChevronRight size={18} />
+          </button>
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-7 gap-1 mb-2">
+        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+          <div key={i} className="text-center text-[10px] font-bold text-secondary uppercase">
+            {d}
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-7 gap-1">
+        {days}
+      </div>
+      <div className="mt-4 flex flex-wrap items-center justify-center gap-4 text-[10px] text-secondary border-t border-slate-700/50 pt-3">
+         <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 bg-primary rounded-sm shadow-[0_0_5px_rgba(20,184,166,0.5)]"></div>
+            <span>Streak</span>
+         </div>
+         <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 bg-orange-500 rounded-sm shadow-[0_0_5px_rgba(249,115,22,0.5)]"></div>
+            <span>Reset</span>
+         </div>
+         <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 border border-primary rounded-sm"></div>
+            <span>Today</span>
+         </div>
+      </div>
+    </div>
+  );
+};
 
 const StatCard = ({ label, value, icon: Icon, colorClass = "text-text", onClick, active = false }: any) => (
   <div 
@@ -166,8 +266,10 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<UserData | null>(null);
   const [view, setView] = useState<'dashboard' | 'history' | 'settings'>('dashboard');
+
+  // AI Motivation State
   const [motivation, setMotivation] = useState<string>("");
-  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [loadingMotivation, setLoadingMotivation] = useState(false);
 
   // Manual entry state for history
   const [manualStartDate, setManualStartDate] = useState("");
@@ -191,6 +293,12 @@ export default function App() {
   // Reset Confirmation Modal state
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
+  // Sorting State
+  const [sortConfig, setSortConfig] = useState<{ key: 'date' | 'days'; direction: 'asc' | 'desc' }>({
+    key: 'date',
+    direction: 'desc'
+  });
+
   useEffect(() => {
     const unsubscribe = subscribeToAuth((currentUser) => {
       setUser(currentUser);
@@ -209,17 +317,87 @@ export default function App() {
     loadData();
   }, [user]);
 
+  // Fetch motivation when data loads initially
+  useEffect(() => {
+    if (data && !motivation && (data.showMotivation ?? true)) {
+        handleFetchMotivation();
+    }
+  }, [data]);
+
+  const currentDays = useMemo(() => {
+    return data && data.currentStreakStart ? calculateDays(data.currentStreakStart) : 0;
+  }, [data]);
+
+  const handleFetchMotivation = async () => {
+    if (!data) return;
+    setLoadingMotivation(true);
+    const msg = await getMotivation(currentDays, data.goal);
+    setMotivation(msg);
+    setLoadingMotivation(false);
+  };
+
+  const toggleMotivation = async () => {
+    if (!data) return;
+    const newData = { ...data, showMotivation: !(data.showMotivation ?? true) };
+    setData(newData);
+    await saveUserData(user, newData);
+  };
+
+  // Compute set of active streak days and overlap days for the calendar
+  const { activeStreakDays, overlapDates } = useMemo(() => {
+    if (!data) return { activeStreakDays: new Set<string>(), overlapDates: new Set<string>() };
+    const active = new Set<string>();
+    const startDates = new Set<string>();
+    const endDates = new Set<string>();
+    
+    const markDays = (start: number, end: number) => {
+        const current = new Date(start);
+        const stop = new Date(end);
+        current.setHours(0,0,0,0);
+        stop.setHours(0,0,0,0);
+        
+        let safety = 0;
+        // Limit loop to prevent potential infinite loops with bad data
+        while(current <= stop && safety < 10000) {
+           active.add(toLocalDateString(current.getTime()));
+           current.setDate(current.getDate() + 1);
+           safety++;
+        }
+    }
+
+    data.history.forEach(h => {
+        markDays(h.startDate, h.endDate);
+        startDates.add(toLocalDateString(h.startDate));
+        endDates.add(toLocalDateString(h.endDate));
+    });
+
+    if (data.currentStreakStart) {
+        markDays(data.currentStreakStart, Date.now());
+        startDates.add(toLocalDateString(data.currentStreakStart));
+    }
+    
+    // Find intersections (Overlap / Reset days)
+    const overlaps = new Set<string>();
+    for (const d of startDates) {
+        if (endDates.has(d)) {
+            overlaps.add(d);
+        }
+    }
+
+    return { activeStreakDays: active, overlapDates: overlaps };
+  }, [data]);
+
   const confirmReset = async () => {
     if (!data) return;
     
-    const currentDays = calculateDays(data.currentStreakStart || Date.now());
+    const currentDaysVal = calculateDays(data.currentStreakStart || Date.now());
     const now = Date.now();
     
     const newHistoryItem: StreakHistoryItem = {
       id: Math.random().toString(36).substr(2, 9),
       startDate: data.currentStreakStart || now,
       endDate: now,
-      days: currentDays
+      days: currentDaysVal
     };
 
     const newData: UserData = {
@@ -231,9 +409,15 @@ export default function App() {
     setData(newData);
     await saveUserData(user, newData);
     
-    // Get fresh motivation
-    fetchMotivation(0, newData.goal);
     setShowResetConfirm(false);
+    
+    // Refresh motivation for day 0 if enabled
+    if (newData.showMotivation ?? true) {
+      setLoadingMotivation(true);
+      const msg = await getMotivation(0, data.goal);
+      setMotivation(msg);
+      setLoadingMotivation(false);
+    }
   };
 
   const handleManualAdd = async () => {
@@ -400,31 +584,7 @@ export default function App() {
     setData(newData);
     await saveUserData(user, newData);
     setIsEditingStart(false);
-    
-    // Refresh motivation based on new days
-    const days = calculateDays(newStartTimestamp);
-    fetchMotivation(days, newData.goal);
   };
-
-  const fetchMotivation = async (days: number, goal: number) => {
-    setIsAiLoading(true);
-    const msg = await getMotivation(days, goal);
-    setMotivation(msg);
-    setIsAiLoading(false);
-  };
-
-  // On mount or streak change, get motivation if empty
-  useEffect(() => {
-    if (data && data.currentStreakStart && !motivation) {
-      const d = calculateDays(data.currentStreakStart);
-      fetchMotivation(d, data.goal);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data]);
-
-  const currentDays = useMemo(() => {
-    return data && data.currentStreakStart ? calculateDays(data.currentStreakStart) : 0;
-  }, [data]);
 
   const longestStreak = useMemo(() => {
     if (!data) return 0;
@@ -434,9 +594,40 @@ export default function App() {
 
   const chartData = useMemo(() => {
     if (!data) return [];
-    // Returns last 10 entries in chronological order
-    return [...data.history].reverse().slice(-10);
+    // Returns last 15 entries in chronological order (Oldest -> Newest)
+    // This allows the user to see "Are my streaks getting longer?"
+    return [...data.history]
+      .sort((a, b) => a.endDate - b.endDate)
+      .slice(-15)
+      .map((item, index) => ({
+        ...item,
+        index: index + 1,
+        dateLabel: new Date(item.endDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+      }));
   }, [data]);
+
+  const sortedHistory = useMemo(() => {
+    if (!data) return [];
+    const sorted = [...data.history];
+    
+    sorted.sort((a, b) => {
+      if (sortConfig.key === 'days') {
+        return sortConfig.direction === 'asc' ? a.days - b.days : b.days - a.days;
+      } else {
+        // Default to date (using endDate)
+        return sortConfig.direction === 'asc' ? a.endDate - b.endDate : b.endDate - a.endDate;
+      }
+    });
+    
+    return sorted;
+  }, [data, sortConfig]);
+
+  const toggleSort = (key: 'date' | 'days') => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'desc' ? 'asc' : 'desc'
+    }));
+  };
 
   if (loading) return <div className="h-screen w-full bg-background flex items-center justify-center"><LoadingSpinner /></div>;
 
@@ -470,7 +661,7 @@ export default function App() {
       <main className="max-w-md mx-auto w-full px-6 flex flex-col gap-6">
         
         {view === 'dashboard' && data && (
-          <div className="animate-fade-in flex flex-col gap-8">
+          <div className="animate-fade-in flex flex-col gap-6">
             
             {/* Progress Section */}
             <div className="flex flex-col items-center justify-center pt-4">
@@ -584,28 +775,34 @@ export default function App() {
               </div>
             </div>
 
-            {/* AI Motivation Card */}
-            <div className="bg-gradient-to-br from-surface to-slate-900 border border-slate-700 p-5 rounded-2xl relative overflow-hidden group">
-               <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                 <BrainCircuit size={64} />
-               </div>
-               <h3 className="text-sm font-semibold text-primary mb-2 flex items-center gap-2">
-                 AI INSIGHT
-                 {isAiLoading && <span className="animate-spin ml-2">⟳</span>}
-               </h3>
-               <p className="text-lg italic font-light leading-relaxed text-slate-300">
-                 "{motivation || "Loading wisdom..."}"
-               </p>
-               <button 
-                onClick={() => fetchMotivation(currentDays, data.goal)}
-                className="mt-4 text-xs font-bold text-secondary hover:text-primary transition-colors uppercase tracking-widest"
-               >
-                 Refresh Wisdom
-               </button>
-            </div>
+            {/* Motivation Card */}
+            {(data.showMotivation ?? true) && (
+              <div className="relative group overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700/50 rounded-2xl p-6 shadow-xl animate-fade-in">
+                 <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <Sparkles size={60} />
+                 </div>
+                 <div className="flex flex-col gap-2 relative z-10">
+                   <div className="flex justify-between items-start">
+                      <span className="text-[10px] font-bold text-primary uppercase tracking-widest flex items-center gap-1.5">
+                         <Sparkles size={12} /> Daily Stoic Wisdom
+                      </span>
+                      <button 
+                        onClick={handleFetchMotivation}
+                        disabled={loadingMotivation}
+                        className="text-slate-500 hover:text-white transition-colors disabled:animate-spin"
+                      >
+                         <RefreshCw size={14} />
+                      </button>
+                   </div>
+                   <p className="text-sm md:text-base text-slate-200 font-medium leading-relaxed italic min-h-[40px] flex items-center">
+                      {loadingMotivation ? "Consulting the oracle..." : `"${motivation}"`}
+                   </p>
+                 </div>
+              </div>
+            )}
 
-            {/* Action Buttons */}
-            <div className="flex flex-col gap-3 mt-2">
+            {/* Action Buttons - Moved Here */}
+            <div className="flex flex-col gap-3">
               <button 
                 onClick={() => setShowResetConfirm(true)}
                 className="w-full py-4 rounded-xl bg-surface border border-red-900/30 text-danger font-bold uppercase tracking-widest hover:bg-red-900/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
@@ -622,25 +819,53 @@ export default function App() {
           <div className="animate-fade-in flex flex-col gap-6">
             <h2 className="text-2xl font-bold">History</h2>
 
-            {/* Chart */}
-            <div className="bg-surface p-4 rounded-2xl border border-slate-700 h-64 w-full">
-              <h3 className="text-sm text-secondary font-bold mb-4 uppercase">Performance Trend</h3>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData}>
-                  <XAxis dataKey="days" hide />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff' }}
-                    itemStyle={{ color: '#14b8a6' }}
-                    cursor={{fill: '#334155'}}
+            {/* Chart - Bar Chart Replacement */}
+            <div className="bg-surface p-4 rounded-2xl border border-slate-700 h-64 w-full relative">
+              <h3 className="text-sm text-secondary font-bold mb-4 uppercase flex items-center gap-2">
+                 <Target size={16} className="text-primary"/>
+                 Streak Evolution <span className="text-[10px] text-slate-500 normal-case">(Last 15)</span>
+              </h3>
+              <ResponsiveContainer width="100%" height="85%">
+                <BarChart data={chartData} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} opacity={0.5} />
+                  <XAxis dataKey="index" hide />
+                  <YAxis 
+                    stroke="#64748b" 
+                    fontSize={10} 
+                    tickLine={false} 
+                    axisLine={false} 
+                    tickFormatter={(value) => `${value}`}
                   />
-                  <Bar dataKey="days" radius={[4, 4, 0, 0]}>
-                    {chartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.days >= data.goal ? '#14b8a6' : '#64748b'} />
-                    ))}
+                  <Tooltip 
+                    cursor={{fill: '#334155', opacity: 0.2}}
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        const data = payload[0].payload;
+                        return (
+                          <div className="bg-slate-800 border border-slate-600 p-2 rounded-lg shadow-xl text-xs">
+                             <p className="text-slate-400 mb-1">{data.dateLabel}</p>
+                             <p className="text-primary font-bold text-lg">{data.days} <span className="text-xs font-normal text-white">Days</span></p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Bar 
+                    dataKey="days" 
+                    radius={[4, 4, 0, 0]}
+                    animationDuration={1500}
+                  >
+                     {chartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.days >= data.goal ? '#f59e0b' : '#14b8a6'} />
+                     ))}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
+            
+            {/* Calendar */}
+            <StreakCalendar activeDates={activeStreakDays} overlapDates={overlapDates} />
 
             {/* Manual Add */}
             <div className="bg-surface p-5 rounded-2xl border border-slate-700">
@@ -685,13 +910,34 @@ export default function App() {
               </div>
             </div>
 
-            {/* List */}
+            {/* List with Sorting */}
             <div className="flex flex-col gap-3 pb-20">
-              <h3 className="text-sm font-bold text-secondary uppercase">Recent Logs</h3>
-              {data.history.length === 0 ? (
+              <div className="flex justify-between items-end mb-1">
+                 <h3 className="text-sm font-bold text-secondary uppercase flex items-center gap-2">
+                   <ListFilter size={14} /> Recent Logs
+                 </h3>
+                 
+                 {/* Sort Controls */}
+                 <div className="flex bg-surface rounded-lg p-1 border border-slate-700/50 gap-1">
+                    <button 
+                      onClick={() => toggleSort('date')}
+                      className={`px-2 py-1 rounded text-[10px] font-bold flex items-center gap-1 transition-all ${sortConfig.key === 'date' ? 'bg-primary text-black' : 'text-slate-400 hover:text-white'}`}
+                    >
+                       Date {sortConfig.key === 'date' && (sortConfig.direction === 'desc' ? <ArrowDown size={10}/> : <ArrowUp size={10}/>)}
+                    </button>
+                    <button 
+                      onClick={() => toggleSort('days')}
+                      className={`px-2 py-1 rounded text-[10px] font-bold flex items-center gap-1 transition-all ${sortConfig.key === 'days' ? 'bg-primary text-black' : 'text-slate-400 hover:text-white'}`}
+                    >
+                       Days {sortConfig.key === 'days' && (sortConfig.direction === 'desc' ? <ArrowDown size={10}/> : <ArrowUp size={10}/>)}
+                    </button>
+                 </div>
+              </div>
+
+              {sortedHistory.length === 0 ? (
                 <div className="text-center py-8 text-secondary italic">No history recorded yet.</div>
               ) : (
-                data.history.map((streak) => (
+                sortedHistory.map((streak) => (
                   <div key={streak.id} className="bg-surface p-4 rounded-xl border border-slate-700/50 transition-all">
                     {editingHistoryId === streak.id ? (
                       <div className="flex flex-col gap-3 animate-fade-in">
@@ -730,7 +976,7 @@ export default function App() {
                         <div className="flex flex-col">
                           <span className="text-xl font-bold text-white">{streak.days} <span className="text-sm font-normal text-secondary">Days</span></span>
                           <div className="flex items-center gap-1 text-xs text-slate-500 mt-1">
-                            <Calendar size={12} />
+                            <CalendarIcon size={12} />
                             <span>{new Date(streak.startDate).toLocaleDateString()}</span>
                             <ArrowRight size={10} />
                             <span>{new Date(streak.endDate).toLocaleDateString()}</span>
@@ -755,6 +1001,29 @@ export default function App() {
           <div className="animate-fade-in flex flex-col gap-6">
             <h2 className="text-2xl font-bold">Settings</h2>
             
+            {/* Preferences Section */}
+            <div className="bg-surface p-5 rounded-2xl border border-slate-700">
+               <h3 className="text-lg font-bold mb-4">Preferences</h3>
+               <div className="flex items-center justify-between p-3 bg-slate-900/50 rounded-lg border border-slate-700/50">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-slate-800 rounded-full text-primary">
+                       <Sparkles size={18} />
+                    </div>
+                    <span className="text-sm font-medium text-white">Daily Stoic Wisdom</span>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      className="sr-only peer" 
+                      checked={data.showMotivation ?? true}
+                      onChange={toggleMotivation}
+                    />
+                    <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                  </label>
+               </div>
+            </div>
+
+            {/* Account Section */}
             <div className="bg-surface p-5 rounded-2xl border border-slate-700">
               <h3 className="text-lg font-bold mb-4">Account</h3>
               <p className="text-sm text-secondary mb-4">

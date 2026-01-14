@@ -1,4 +1,5 @@
-import { initializeApp, getApps, FirebaseApp, FirebaseOptions } from 'firebase/app';
+import { initializeApp, getApps } from 'firebase/app';
+import type { FirebaseApp, FirebaseOptions } from 'firebase/app';
 import { 
   getFirestore, 
   doc, 
@@ -104,13 +105,16 @@ export const getUserData = async (user: User | null): Promise<UserData> => {
   const defaultData: UserData = {
     currentStreakStart: Date.now(),
     goal: 30,
-    history: []
+    history: [],
+    showMotivation: true
   };
 
   // If no user or no DB, try local storage
   if (!user || !db) {
     const local = localStorage.getItem(LOCAL_STORAGE_DATA_KEY);
-    if (local) return JSON.parse(local);
+    if (local) {
+      return { ...defaultData, ...JSON.parse(local) };
+    }
     return defaultData;
   }
 
@@ -118,11 +122,14 @@ export const getUserData = async (user: User | null): Promise<UserData> => {
     const docRef = doc(db, 'users', user.uid);
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
-      return docSnap.data() as UserData;
+      // Merge with default data to ensure new fields (like showMotivation) are present for existing users
+      return { ...defaultData, ...docSnap.data() } as UserData;
     } else {
       // If doc doesn't exist, try to see if we have local data to migrate
       const local = localStorage.getItem(LOCAL_STORAGE_DATA_KEY);
-      const initialData = local ? { ...JSON.parse(local), uid: user.uid } : { ...defaultData, uid: user.uid };
+      const localData = local ? JSON.parse(local) : {};
+      
+      const initialData = { ...defaultData, ...localData, uid: user.uid };
       
       await setDoc(docRef, initialData);
       return initialData;
@@ -131,7 +138,7 @@ export const getUserData = async (user: User | null): Promise<UserData> => {
     console.error("Error fetching data", e);
     // Fallback to local if remote fetch fails
     const local = localStorage.getItem(LOCAL_STORAGE_DATA_KEY);
-    return local ? JSON.parse(local) : defaultData;
+    return local ? { ...defaultData, ...JSON.parse(local) } : defaultData;
   }
 };
 
