@@ -12,7 +12,9 @@ import {
   PenLine,
   Check,
   X,
-  Calendar
+  Calendar,
+  ArrowRight,
+  Calculator
 } from 'lucide-react';
 import { 
   BarChart,
@@ -42,6 +44,23 @@ const calculateDays = (start: number): number => {
   const now = Date.now();
   const diff = now - start;
   return Math.floor(diff / MILLIS_PER_DAY);
+};
+
+// Helper: parse "YYYY-MM-DD" as local midnight timestamp
+const parseLocalDate = (dateStr: string): number => {
+  if (!dateStr) return Date.now();
+  const [y, m, d] = dateStr.split('-').map(Number);
+  // Create date using local components (months are 0-indexed)
+  return new Date(y, m - 1, d).getTime();
+};
+
+// Helper: format timestamp to "YYYY-MM-DD" in local time
+const toLocalDateString = (timestamp: number): string => {
+  const d = new Date(timestamp);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
 // --- Components ---
@@ -122,12 +141,14 @@ export default function App() {
   const [isAiLoading, setIsAiLoading] = useState(false);
 
   // Manual entry state for history
-  const [manualDate, setManualDate] = useState("");
-  const [manualDuration, setManualDuration] = useState("");
+  const [manualStartDate, setManualStartDate] = useState("");
+  const [manualEndDate, setManualEndDate] = useState("");
 
   // Goal editing state (Dashboard)
   const [isEditingGoal, setIsEditingGoal] = useState(false);
+  const [goalMode, setGoalMode] = useState<'days' | 'date'>('days');
   const [tempGoal, setTempGoal] = useState("30");
+  const [tempGoalDate, setTempGoalDate] = useState("");
 
   // Streak Start Date editing state (Dashboard)
   const [isEditingStart, setIsEditingStart] = useState(false);
@@ -180,17 +201,26 @@ export default function App() {
   }, [data, user]);
 
   const handleManualAdd = async () => {
-    if (!manualDate || !manualDuration || !data) return;
+    if (!manualStartDate || !manualEndDate || !data) return;
     
-    const days = parseInt(manualDuration);
-    const endDate = new Date(manualDate).getTime();
-    const startDate = endDate - (days * MILLIS_PER_DAY);
+    const start = parseLocalDate(manualStartDate);
+    const end = parseLocalDate(manualEndDate);
+
+    if (isNaN(start) || isNaN(end)) return;
+
+    if (end <= start) {
+      alert("End date must be after start date.");
+      return;
+    }
+    
+    // Calculate days based on dates
+    const days = Math.floor((end - start) / MILLIS_PER_DAY);
 
     const newItem: StreakHistoryItem = {
       id: Math.random().toString(36).substr(2, 9),
-      startDate,
-      endDate,
-      days
+      startDate: start,
+      endDate: end,
+      days: days > 0 ? days : 0
     };
 
     const newData = {
@@ -200,14 +230,41 @@ export default function App() {
 
     setData(newData);
     await saveUserData(user, newData);
-    setManualDate("");
-    setManualDuration("");
+    setManualStartDate("");
+    setManualEndDate("");
   };
+
+  const manualDaysCalculated = useMemo(() => {
+    if (!manualStartDate || !manualEndDate) return 0;
+    const start = parseLocalDate(manualStartDate);
+    const end = parseLocalDate(manualEndDate);
+    if (isNaN(start) || isNaN(end) || end <= start) return 0;
+    return Math.floor((end - start) / MILLIS_PER_DAY);
+  }, [manualStartDate, manualEndDate]);
 
   const saveGoal = async () => {
     if (!data) return;
-    const newGoal = parseInt(tempGoal);
-    if (isNaN(newGoal) || newGoal < 1) return;
+    let newGoal = 0;
+
+    if (goalMode === 'days') {
+      newGoal = parseInt(tempGoal);
+    } else {
+      // Calculate days from current start to goal date
+      const target = parseLocalDate(tempGoalDate);
+      const start = data.currentStreakStart || Date.now();
+      
+      if (isNaN(target)) return;
+      if (target <= start) {
+        alert("Goal date must be after your streak start date.");
+        return;
+      }
+      newGoal = Math.floor((target - start) / MILLIS_PER_DAY);
+    }
+
+    if (isNaN(newGoal) || newGoal < 1) {
+      alert("Invalid goal. It must be at least 1 day.");
+      return;
+    }
     
     const newData = { ...data, goal: newGoal };
     setData(newData);
@@ -217,16 +274,14 @@ export default function App() {
 
   const startEditingDate = () => {
     if (!data?.currentStreakStart) return;
-    // Convert timestamp to YYYY-MM-DD
-    const date = new Date(data.currentStreakStart);
-    const dateString = date.toISOString().split('T')[0];
+    const dateString = toLocalDateString(data.currentStreakStart);
     setTempStartDate(dateString);
     setIsEditingStart(true);
   };
 
   const saveStartDate = async () => {
     if (!data || !tempStartDate) return;
-    const newStartTimestamp = new Date(tempStartDate).getTime();
+    const newStartTimestamp = parseLocalDate(tempStartDate);
     
     if (isNaN(newStartTimestamp)) return;
     if (newStartTimestamp > Date.now()) {
@@ -343,36 +398,68 @@ export default function App() {
                 </div>
               )}
               
-              <div className="mt-6 grid grid-cols-2 gap-4 w-full h-28">
+              <div className="mt-6 grid grid-cols-2 gap-4 w-full h-32">
                 {/* Goal Card (Editable) */}
                 {isEditingGoal ? (
-                   <div className="bg-surface rounded-2xl p-4 flex flex-col items-center justify-center shadow-lg border border-primary ring-1 ring-primary h-full">
-                     <span className="text-secondary text-xs uppercase tracking-wider font-bold mb-2">Edit Goal</span>
-                     <div className="flex items-center gap-2">
-                       <input 
-                         type="number" 
-                         value={tempGoal}
-                         onChange={(e) => setTempGoal(e.target.value)}
-                         className="w-16 bg-background border border-slate-600 rounded p-1 text-center text-xl font-bold text-white focus:border-primary outline-none"
-                         autoFocus
-                       />
-                       <div className="flex flex-col gap-1">
-                         <button onClick={saveGoal} className="p-1 bg-primary text-black rounded hover:bg-teal-400">
+                   <div className="bg-surface rounded-2xl p-2 sm:p-3 flex flex-col items-center justify-center shadow-lg border border-primary ring-1 ring-primary h-full relative overflow-hidden">
+                     {/* Toggle */}
+                     <div className="flex w-full mb-2 bg-slate-900 rounded-lg p-0.5">
+                        <button 
+                          onClick={() => setGoalMode('days')}
+                          className={`flex-1 text-[10px] font-bold py-1 rounded-md transition-all ${goalMode === 'days' ? 'bg-primary text-black shadow' : 'text-secondary hover:text-white'}`}
+                        >
+                          DAYS
+                        </button>
+                        <button 
+                          onClick={() => setGoalMode('date')}
+                          className={`flex-1 text-[10px] font-bold py-1 rounded-md transition-all ${goalMode === 'date' ? 'bg-primary text-black shadow' : 'text-secondary hover:text-white'}`}
+                        >
+                          DATE
+                        </button>
+                     </div>
+
+                     <div className="flex items-center gap-2 mb-1 flex-1">
+                       {goalMode === 'days' ? (
+                          <div className="flex flex-col items-center">
+                            <input 
+                              type="number" 
+                              value={tempGoal}
+                              onChange={(e) => setTempGoal(e.target.value)}
+                              className="w-16 bg-background border border-slate-600 rounded p-1 text-center text-lg font-bold text-white focus:border-primary outline-none"
+                              autoFocus
+                            />
+                            <span className="text-[10px] text-secondary mt-1">Total Days</span>
+                          </div>
+                       ) : (
+                          <div className="flex flex-col items-center">
+                            <input 
+                              type="date" 
+                              value={tempGoalDate}
+                              onChange={(e) => setTempGoalDate(e.target.value)}
+                              className="w-24 bg-background border border-slate-600 rounded p-1 text-center text-xs font-bold text-white focus:border-primary outline-none"
+                              autoFocus
+                            />
+                            <span className="text-[10px] text-secondary mt-1">Goal Date</span>
+                          </div>
+                       )}
+                     </div>
+
+                     <div className="flex w-full gap-2 mt-auto">
+                         <button onClick={saveGoal} className="flex-1 p-1 bg-primary text-black rounded hover:bg-teal-400 flex justify-center">
                            <Check size={14} />
                          </button>
-                         <button onClick={() => { setIsEditingGoal(false); setTempGoal(data.goal.toString()); }} className="p-1 bg-slate-700 text-white rounded hover:bg-slate-600">
+                         <button onClick={() => { setIsEditingGoal(false); setTempGoal(data.goal.toString()); }} className="flex-1 p-1 bg-slate-700 text-white rounded hover:bg-slate-600 flex justify-center">
                            <X size={14} />
                          </button>
                        </div>
-                     </div>
                    </div>
                 ) : (
                   <StatCard 
-                    label="Goal" 
-                    value={`${data.goal} Days`} 
+                    label="Goal Progress" 
+                    value={`${currentDays} / ${data.goal}`} 
                     icon={Trophy} 
                     colorClass="text-yellow-500" 
-                    onClick={() => setIsEditingGoal(true)}
+                    onClick={() => { setIsEditingGoal(true); setGoalMode('days'); }}
                   />
                 )}
                 
@@ -445,30 +532,38 @@ export default function App() {
                 Log Past Streak
               </h3>
               <div className="flex flex-col gap-3">
-                <div>
-                  <label className="text-xs text-secondary mb-1 block">Date Ended</label>
-                  <input 
-                    type="date" 
-                    value={manualDate}
-                    onChange={(e) => setManualDate(e.target.value)}
-                    className="w-full bg-background border border-slate-600 rounded-lg p-3 text-white focus:border-primary outline-none"
-                  />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-secondary mb-1 block">Start Date</label>
+                    <input 
+                      type="date" 
+                      value={manualStartDate}
+                      onChange={(e) => setManualStartDate(e.target.value)}
+                      className="w-full bg-background border border-slate-600 rounded-lg p-3 text-white text-sm focus:border-primary outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-secondary mb-1 block">End Date</label>
+                    <input 
+                      type="date" 
+                      value={manualEndDate}
+                      onChange={(e) => setManualEndDate(e.target.value)}
+                      className="w-full bg-background border border-slate-600 rounded-lg p-3 text-white text-sm focus:border-primary outline-none"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="text-xs text-secondary mb-1 block">Duration (Days)</label>
-                  <input 
-                    type="number" 
-                    placeholder="e.g. 14"
-                    value={manualDuration}
-                    onChange={(e) => setManualDuration(e.target.value)}
-                    className="w-full bg-background border border-slate-600 rounded-lg p-3 text-white focus:border-primary outline-none"
-                  />
-                </div>
+                
+                {manualDaysCalculated > 0 && (
+                  <div className="bg-slate-900/50 p-2 rounded text-center border border-slate-700/50">
+                     <span className="text-xs text-secondary">Calculated Duration:</span> <span className="text-primary font-bold">{manualDaysCalculated} Days</span>
+                  </div>
+                )}
+
                 <button 
                   onClick={handleManualAdd}
-                  className="mt-2 w-full bg-primary text-background font-bold py-3 rounded-lg hover:bg-teal-400 transition-colors"
+                  className="mt-2 w-full bg-primary text-background font-bold py-3 rounded-lg hover:bg-teal-400 transition-colors flex items-center justify-center gap-2"
                 >
-                  Add Record
+                  <Calculator size={18} /> Add Record
                 </button>
               </div>
             </div>
@@ -483,7 +578,12 @@ export default function App() {
                   <div key={streak.id} className="bg-surface p-4 rounded-xl flex justify-between items-center border border-slate-700/50">
                     <div className="flex flex-col">
                       <span className="text-xl font-bold text-white">{streak.days} <span className="text-sm font-normal text-secondary">Days</span></span>
-                      <span className="text-xs text-slate-500">{new Date(streak.endDate).toLocaleDateString()}</span>
+                      <div className="flex items-center gap-1 text-xs text-slate-500 mt-1">
+                        <Calendar size={12} />
+                        <span>{new Date(streak.startDate).toLocaleDateString()}</span>
+                        <ArrowRight size={10} />
+                        <span>{new Date(streak.endDate).toLocaleDateString()}</span>
+                      </div>
                     </div>
                     {streak.days >= data.goal && <Trophy size={20} className="text-yellow-500" />}
                   </div>

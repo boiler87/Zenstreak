@@ -79,7 +79,14 @@ export const signInWithGoogle = async (): Promise<User | null> => {
   }
 };
 
+// --- Data Services (Hybrid Firebase + LocalStorage) ---
+
+const LOCAL_STORAGE_DATA_KEY = 'zenstreak_data';
+
 export const logout = async () => {
+  // Clear local storage data so it doesn't persist for the next 'guest' user
+  localStorage.removeItem(LOCAL_STORAGE_DATA_KEY);
+  
   if (auth) {
     await signOut(auth);
   }
@@ -92,10 +99,6 @@ export const subscribeToAuth = (callback: (user: User | null) => void) => {
   }
   return onAuthStateChanged(auth, callback);
 };
-
-// --- Data Services (Hybrid Firebase + LocalStorage) ---
-
-const LOCAL_STORAGE_DATA_KEY = 'zenstreak_data';
 
 export const getUserData = async (user: User | null): Promise<UserData> => {
   const defaultData: UserData = {
