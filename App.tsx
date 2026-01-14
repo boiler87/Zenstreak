@@ -14,7 +14,12 @@ import {
   X,
   Calendar,
   ArrowRight,
-  Calculator
+  Calculator,
+  AlertTriangle,
+  Edit2,
+  Trash2,
+  Save,
+  Target
 } from 'lucide-react';
 import { 
   BarChart,
@@ -88,19 +93,36 @@ const StatCard = ({ label, value, icon: Icon, colorClass = "text-text", onClick,
 
 const ProgressBar = ({ current, max }: { current: number; max: number }) => {
   const percentage = Math.min(100, Math.max(0, (current / max) * 100));
-  const radius = 80;
+  const radius = 90; // Slightly larger
   const stroke = 12;
   const normalizedRadius = radius - stroke * 2;
   const circumference = normalizedRadius * 2 * Math.PI;
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
   return (
-    <div className="relative flex items-center justify-center">
+    <div className="relative flex items-center justify-center group">
+       {/* Background Glow */}
+       <div className="absolute inset-0 bg-primary/5 blur-3xl rounded-full scale-110 opacity-50 animate-pulse"></div>
+       
       <svg
         height={radius * 2}
         width={radius * 2}
-        className="rotate-[-90deg] transition-all duration-500 ease-out"
+        className="rotate-[-90deg] transition-all duration-500 ease-out relative z-10"
       >
+         <defs>
+          <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#14b8a6" />
+            <stop offset="50%" stopColor="#2dd4bf" />
+            <stop offset="100%" stopColor="#0f766e" />
+          </linearGradient>
+          <filter id="glow">
+             <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+             <feMerge>
+                 <feMergeNode in="coloredBlur"/>
+                 <feMergeNode in="SourceGraphic"/>
+             </feMerge>
+          </filter>
+        </defs>
         <circle
           stroke="#1e293b"
           strokeWidth={stroke}
@@ -110,7 +132,7 @@ const ProgressBar = ({ current, max }: { current: number; max: number }) => {
           cy={radius}
         />
         <circle
-          stroke="currentColor"
+          stroke="url(#progressGradient)"
           strokeWidth={stroke}
           strokeDasharray={circumference + ' ' + circumference}
           style={{ strokeDashoffset }}
@@ -119,12 +141,19 @@ const ProgressBar = ({ current, max }: { current: number; max: number }) => {
           r={normalizedRadius}
           cx={radius}
           cy={radius}
-          className="text-primary transition-all duration-1000 ease-in-out"
+          filter="url(#glow)"
+          className="transition-all duration-1000 ease-in-out"
         />
       </svg>
-      <div className="absolute flex flex-col items-center">
-        <span className="text-5xl font-bold text-white">{current}</span>
-        <span className="text-sm text-secondary font-medium">DAYS</span>
+      <div className="absolute flex flex-col items-center z-20">
+        <span className="text-6xl font-bold text-white tracking-tighter drop-shadow-lg">{current}</span>
+        <span className="text-xs text-secondary font-bold uppercase tracking-widest mb-2">DAYS</span>
+        
+        {/* Percentage Badge */}
+        <div className="flex items-center gap-1.5 bg-surface/80 border border-slate-700/50 px-3 py-1 rounded-full shadow-lg backdrop-blur-md">
+            <Target size={12} className="text-primary" />
+            <span className="text-xs font-mono font-bold text-primary">{percentage.toFixed(0)}%</span>
+        </div>
       </div>
     </div>
   );
@@ -144,6 +173,11 @@ export default function App() {
   const [manualStartDate, setManualStartDate] = useState("");
   const [manualEndDate, setManualEndDate] = useState("");
 
+  // History Editing State
+  const [editingHistoryId, setEditingHistoryId] = useState<string | null>(null);
+  const [editStartDate, setEditStartDate] = useState("");
+  const [editEndDate, setEditEndDate] = useState("");
+
   // Goal editing state (Dashboard)
   const [isEditingGoal, setIsEditingGoal] = useState(false);
   const [goalMode, setGoalMode] = useState<'days' | 'date'>('days');
@@ -153,6 +187,9 @@ export default function App() {
   // Streak Start Date editing state (Dashboard)
   const [isEditingStart, setIsEditingStart] = useState(false);
   const [tempStartDate, setTempStartDate] = useState("");
+  
+  // Reset Confirmation Modal state
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   useEffect(() => {
     const unsubscribe = subscribeToAuth((currentUser) => {
@@ -172,11 +209,9 @@ export default function App() {
     loadData();
   }, [user]);
 
-  const handleReset = useCallback(async () => {
+  const confirmReset = async () => {
     if (!data) return;
-    const confirmReset = window.confirm("Are you sure you want to reset your streak? This will record the current streak in history.");
-    if (!confirmReset) return;
-
+    
     const currentDays = calculateDays(data.currentStreakStart || Date.now());
     const now = Date.now();
     
@@ -198,7 +233,8 @@ export default function App() {
     
     // Get fresh motivation
     fetchMotivation(0, newData.goal);
-  }, [data, user]);
+    setShowResetConfirm(false);
+  };
 
   const handleManualAdd = async () => {
     if (!manualStartDate || !manualEndDate || !data) return;
@@ -242,6 +278,77 @@ export default function App() {
     return Math.floor((end - start) / MILLIS_PER_DAY);
   }, [manualStartDate, manualEndDate]);
 
+  // --- History Edit Functions ---
+  const startEditingHistory = (item: StreakHistoryItem) => {
+    setEditingHistoryId(item.id);
+    setEditStartDate(toLocalDateString(item.startDate));
+    setEditEndDate(toLocalDateString(item.endDate));
+  };
+
+  const cancelEditingHistory = () => {
+    setEditingHistoryId(null);
+    setEditStartDate("");
+    setEditEndDate("");
+  };
+
+  const saveHistoryEdit = async () => {
+    if (!data || !editingHistoryId) return;
+    
+    const start = parseLocalDate(editStartDate);
+    const end = parseLocalDate(editEndDate);
+
+    if (isNaN(start) || isNaN(end)) return;
+
+    if (end <= start) {
+      alert("End date must be after start date.");
+      return;
+    }
+    
+    const days = Math.floor((end - start) / MILLIS_PER_DAY);
+    const finalDays = days > 0 ? days : 0;
+
+    const updatedHistory = data.history.map(item => {
+      if (item.id === editingHistoryId) {
+        return {
+          ...item,
+          startDate: start,
+          endDate: end,
+          days: finalDays
+        };
+      }
+      return item;
+    }).sort((a, b) => b.endDate - a.endDate);
+
+    const newData = {
+      ...data,
+      history: updatedHistory
+    };
+
+    setData(newData);
+    await saveUserData(user, newData);
+    cancelEditingHistory();
+  };
+
+  const deleteHistoryItem = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this record?")) return;
+    if (!data) return;
+    
+    const updatedHistory = data.history.filter(item => item.id !== id);
+    const newData = { ...data, history: updatedHistory };
+    setData(newData);
+    await saveUserData(user, newData);
+    if (editingHistoryId === id) cancelEditingHistory();
+  };
+
+  const editDaysCalculated = useMemo(() => {
+    if (!editStartDate || !editEndDate) return 0;
+    const start = parseLocalDate(editStartDate);
+    const end = parseLocalDate(editEndDate);
+    if (isNaN(start) || isNaN(end) || end <= start) return 0;
+    return Math.floor((end - start) / MILLIS_PER_DAY);
+  }, [editStartDate, editEndDate]);
+
+  // --- Goal Edit Functions ---
   const saveGoal = async () => {
     if (!data) return;
     let newGoal = 0;
@@ -369,11 +476,21 @@ export default function App() {
             <div className="flex flex-col items-center justify-center pt-4">
               <ProgressBar current={currentDays} max={data.goal} />
               
+              {/* Context Text below Progress Bar */}
+              <div className="mt-4 text-center">
+                 <p className="text-secondary text-sm">
+                   {currentDays >= data.goal 
+                     ? <span className="text-primary font-bold flex items-center justify-center gap-1"><Trophy size={14}/> Goal Reached!</span>
+                     : <span><span className="text-white font-bold">{data.goal - currentDays}</span> days until goal</span>
+                   }
+                 </p>
+              </div>
+
               {/* Date Display / Edit Control */}
               {!isEditingStart ? (
                 <button 
                   onClick={startEditingDate}
-                  className="mt-4 flex items-center gap-2 text-sm text-secondary hover:text-primary transition-colors px-3 py-1 rounded-full hover:bg-surface border border-transparent hover:border-slate-700/50"
+                  className="mt-2 flex items-center gap-2 text-xs text-secondary hover:text-primary transition-colors px-3 py-1 rounded-full hover:bg-surface border border-transparent hover:border-slate-700/50"
                 >
                   <span>Started {new Date(data.currentStreakStart || Date.now()).toLocaleDateString()}</span>
                   <PenLine size={12} />
@@ -490,7 +607,7 @@ export default function App() {
             {/* Action Buttons */}
             <div className="flex flex-col gap-3 mt-2">
               <button 
-                onClick={handleReset}
+                onClick={() => setShowResetConfirm(true)}
                 className="w-full py-4 rounded-xl bg-surface border border-red-900/30 text-danger font-bold uppercase tracking-widest hover:bg-red-900/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
               >
                 <RotateCcw size={20} />
@@ -575,17 +692,58 @@ export default function App() {
                 <div className="text-center py-8 text-secondary italic">No history recorded yet.</div>
               ) : (
                 data.history.map((streak) => (
-                  <div key={streak.id} className="bg-surface p-4 rounded-xl flex justify-between items-center border border-slate-700/50">
-                    <div className="flex flex-col">
-                      <span className="text-xl font-bold text-white">{streak.days} <span className="text-sm font-normal text-secondary">Days</span></span>
-                      <div className="flex items-center gap-1 text-xs text-slate-500 mt-1">
-                        <Calendar size={12} />
-                        <span>{new Date(streak.startDate).toLocaleDateString()}</span>
-                        <ArrowRight size={10} />
-                        <span>{new Date(streak.endDate).toLocaleDateString()}</span>
+                  <div key={streak.id} className="bg-surface p-4 rounded-xl border border-slate-700/50 transition-all">
+                    {editingHistoryId === streak.id ? (
+                      <div className="flex flex-col gap-3 animate-fade-in">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Edit2 size={14} className="text-primary" />
+                          <span className="text-xs font-bold text-primary">EDITING RECORD</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                           <div>
+                             <label className="text-[10px] text-secondary uppercase font-bold mb-1 block">Start</label>
+                             <input type="date" value={editStartDate} onChange={e => setEditStartDate(e.target.value)} className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-xs text-white focus:border-primary outline-none" />
+                           </div>
+                           <div>
+                             <label className="text-[10px] text-secondary uppercase font-bold mb-1 block">End</label>
+                             <input type="date" value={editEndDate} onChange={e => setEditEndDate(e.target.value)} className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-xs text-white focus:border-primary outline-none" />
+                           </div>
+                        </div>
+                        <div className="flex justify-between items-center bg-slate-900/30 p-2 rounded">
+                           <span className="text-xs text-secondary">Duration:</span>
+                           <span className="text-primary font-bold">{editDaysCalculated} Days</span>
+                        </div>
+                        <div className="flex gap-2 mt-1">
+                           <button onClick={saveHistoryEdit} className="flex-1 bg-primary text-black p-2 rounded text-xs font-bold flex items-center justify-center gap-1 hover:bg-teal-400">
+                             <Save size={14} /> Save
+                           </button>
+                           <button onClick={() => deleteHistoryItem(streak.id)} className="p-2 bg-red-900/20 text-danger border border-red-900/30 rounded hover:bg-red-900/40">
+                             <Trash2 size={14} />
+                           </button>
+                           <button onClick={cancelEditingHistory} className="p-2 bg-slate-700 text-white rounded hover:bg-slate-600">
+                             <X size={14} />
+                           </button>
+                        </div>
                       </div>
-                    </div>
-                    {streak.days >= data.goal && <Trophy size={20} className="text-yellow-500" />}
+                    ) : (
+                      <div className="flex justify-between items-center group">
+                        <div className="flex flex-col">
+                          <span className="text-xl font-bold text-white">{streak.days} <span className="text-sm font-normal text-secondary">Days</span></span>
+                          <div className="flex items-center gap-1 text-xs text-slate-500 mt-1">
+                            <Calendar size={12} />
+                            <span>{new Date(streak.startDate).toLocaleDateString()}</span>
+                            <ArrowRight size={10} />
+                            <span>{new Date(streak.endDate).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            {streak.days >= data.goal && <Trophy size={20} className="text-yellow-500" />}
+                            <button onClick={() => startEditingHistory(streak)} className="p-2 text-slate-600 hover:text-white transition-colors bg-transparent hover:bg-slate-700/50 rounded-lg">
+                              <Edit2 size={16} />
+                            </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))
               )}
@@ -628,6 +786,41 @@ export default function App() {
         )}
 
       </main>
+
+      {/* --- Reset Confirmation Modal --- */}
+      {showResetConfirm && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-surface border border-slate-700 rounded-2xl p-6 max-w-sm w-full shadow-2xl transform transition-all scale-100">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 bg-red-500/10 rounded-full text-danger">
+                <AlertTriangle size={24} />
+              </div>
+              <h3 className="text-xl font-bold text-white">Reset Streak?</h3>
+            </div>
+            
+            <p className="text-slate-300 mb-6 leading-relaxed text-sm">
+              This will end your current streak of <span className="text-primary font-bold text-base">{currentDays} days</span>.
+              <br/><br/>
+              Your progress will be saved to your history so you can track it later. Are you sure you want to restart from day 0?
+            </p>
+            
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setShowResetConfirm(false)} 
+                className="flex-1 py-3 rounded-xl bg-slate-800 text-white font-semibold hover:bg-slate-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmReset} 
+                className="flex-1 py-3 rounded-xl bg-danger text-white font-bold hover:bg-red-600 shadow-lg shadow-red-900/20 transition-all active:scale-95"
+              >
+                Confirm Reset
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* --- Bottom Navigation (Mobile Friendly) --- */}
       <nav className="fixed bottom-0 w-full bg-surface/90 backdrop-blur-lg border-t border-slate-700/50 pb-safe z-50">
