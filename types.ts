@@ -1,0 +1,18 @@
+export interface StreakHistoryItem {
+  id: string;
+  startDate: number; // timestamp
+  endDate: number;   // timestamp
+  days: number;
+}
+
+export interface UserData {
+  currentStreakStart: number | null; // Timestamp of when the current streak started
+  goal: number; // Target days
+  history: StreakHistoryItem[];
+  uid?: string;
+}
+
+export interface MotivationResponse {
+  message: string;
+  author?: string;
+}
