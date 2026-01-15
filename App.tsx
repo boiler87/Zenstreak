@@ -193,7 +193,7 @@ const StatCard = ({ label, value, icon: Icon, colorClass = "text-text", onClick,
 
 const ProgressBar = ({ current, max, children }: { current: number; max: number; children?: React.ReactNode }) => {
   const percentage = Math.min(100, Math.max(0, (current / max) * 100));
-  const radius = 175; // Increased size (350px diameter) to accommodate content comfortably
+  const radius = 175; // Large size (350px diameter) to accommodate content comfortably
   const stroke = 22; 
   const normalizedRadius = radius - stroke * 2;
   const circumference = normalizedRadius * 2 * Math.PI;
@@ -245,16 +245,18 @@ const ProgressBar = ({ current, max, children }: { current: number; max: number;
       </svg>
       <div className="absolute flex flex-col items-center z-20 w-full">
         <span className="text-[8.5rem] leading-none font-black text-text tracking-tighter drop-shadow-sm">{current}</span>
-        <span className="text-lg text-secondary font-black uppercase tracking-[0.25em] -mt-2 mb-3">DAYS</span>
+        <span className="text-lg text-secondary font-black uppercase tracking-[0.25em] -mt-2 mb-2">DAYS</span>
+        
+        {/* Injected Content (Start Date) */}
+        <div className="mb-3 z-30 relative">
+          {children}
+        </div>
         
         {/* Percentage Badge */}
-        <div className="flex items-center gap-1.5 bg-white/80 border border-slate-200 px-3 py-1 rounded-full shadow-sm backdrop-blur-md mb-3">
+        <div className="flex items-center gap-1.5 bg-white/80 border border-slate-200 px-3 py-1 rounded-full shadow-sm backdrop-blur-md">
             <Target size={12} className="text-primary" />
             <span className="text-xs font-mono font-bold text-primary">{percentage.toFixed(0)}%</span>
         </div>
-
-        {/* Injected Content (Start Date) */}
-        {children}
       </div>
     </div>
   );
