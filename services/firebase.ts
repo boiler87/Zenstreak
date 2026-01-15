@@ -1,5 +1,4 @@
-import { initializeApp, getApps } from 'firebase/app';
-import type { FirebaseApp, FirebaseOptions } from 'firebase/app';
+import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { 
   getFirestore, 
   doc, 
@@ -18,7 +17,7 @@ import {
 } from 'firebase/auth';
 import { UserData } from '../types';
 
-const firebaseConfig: FirebaseOptions = {
+const firebaseConfig = {
   apiKey: "AIzaSyCcHARUXeN4tCYTh_mQEEBkzeQAKuNxhJk",
   authDomain: "streaker-484317.firebaseapp.com",
   projectId: "streaker-484317",

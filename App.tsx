@@ -81,7 +81,7 @@ const toLocalDateString = (timestamp: number): string => {
 
 const LoadingSpinner = () => (
   <div className="flex justify-center items-center h-full text-primary animate-pulse">
-    <div className="w-8 h-8 border-4 border-current border-t-transparent rounded-full animate-spin"></div>
+    <div className="w-10 h-10 border-4 border-current border-t-transparent rounded-full animate-spin"></div>
   </div>
 );
 
@@ -100,7 +100,7 @@ const StreakCalendar = ({ activeDates, overlapDates }: { activeDates: Set<string
   const days = [];
   // Empty slots for start of month
   for (let i = 0; i < firstDayOfMonth; i++) {
-    days.push(<div key={`empty-${i}`} className="h-8 w-full" />);
+    days.push(<div key={`empty-${i}`} className="h-10 w-full" />);
   }
 
   const todayStr = toLocalDateString(Date.now());
@@ -115,14 +115,14 @@ const StreakCalendar = ({ activeDates, overlapDates }: { activeDates: Set<string
       <div 
         key={dateStr} 
         className={`
-          h-8 w-full flex items-center justify-center rounded-lg text-xs font-medium transition-all relative select-none
+          h-10 w-full flex items-center justify-center rounded-xl text-base font-bold transition-all relative select-none
           ${isOverlap 
-             ? 'bg-orange-500 text-white font-bold shadow-[0_0_10px_rgba(249,115,22,0.3)]' 
+             ? 'bg-orange-500 text-white shadow-[0_0_15px_rgba(249,115,22,0.4)] z-10 scale-110' 
              : isActive 
-                 ? 'bg-primary text-black font-bold shadow-[0_0_10px_rgba(20,184,166,0.3)]' 
-                 : 'text-slate-400 hover:bg-slate-800'
+                 ? 'bg-primary text-white shadow-[0_0_10px_rgba(13,148,136,0.3)]' 
+                 : 'text-slate-400 hover:bg-slate-100 hover:text-text'
           }
-          ${isToday && !isActive && !isOverlap ? 'border border-primary text-primary' : ''}
+          ${isToday && !isActive && !isOverlap ? 'border-2 border-primary text-primary' : ''}
           ${isToday && (isActive || isOverlap) ? 'ring-2 ring-white' : ''}
         `}
       >
@@ -132,43 +132,43 @@ const StreakCalendar = ({ activeDates, overlapDates }: { activeDates: Set<string
   }
 
   return (
-    <div className="bg-surface p-4 rounded-2xl border border-slate-700 w-full animate-fade-in">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-white font-bold text-sm md:text-base capitalize flex items-center gap-2">
-           <CalendarIcon size={16} className="text-primary"/>
+    <div className="bg-surface p-6 rounded-3xl border border-slate-200 w-full animate-fade-in shadow-sm">
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="text-text font-black text-xl capitalize flex items-center gap-3">
+           <CalendarIcon size={24} className="text-primary"/>
            {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
         </h3>
-        <div className="flex gap-1">
-          <button onClick={prevMonth} className="p-1.5 hover:bg-slate-700 rounded-lg text-secondary hover:text-white transition-colors">
-            <ChevronLeft size={18} />
+        <div className="flex gap-2">
+          <button onClick={prevMonth} className="p-2 hover:bg-slate-100 rounded-xl text-secondary hover:text-primary transition-colors">
+            <ChevronLeft size={24} />
           </button>
-          <button onClick={nextMonth} className="p-1.5 hover:bg-slate-700 rounded-lg text-secondary hover:text-white transition-colors">
-            <ChevronRight size={18} />
+          <button onClick={nextMonth} className="p-2 hover:bg-slate-100 rounded-xl text-secondary hover:text-primary transition-colors">
+            <ChevronRight size={24} />
           </button>
         </div>
       </div>
       
-      <div className="grid grid-cols-7 gap-1 mb-2">
+      <div className="grid grid-cols-7 gap-2 mb-3">
         {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
-          <div key={i} className="text-center text-[10px] font-bold text-secondary uppercase">
+          <div key={i} className="text-center text-xs font-black text-secondary uppercase tracking-wider">
             {d}
           </div>
         ))}
       </div>
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-2">
         {days}
       </div>
-      <div className="mt-4 flex flex-wrap items-center justify-center gap-4 text-[10px] text-secondary border-t border-slate-700/50 pt-3">
-         <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 bg-primary rounded-sm shadow-[0_0_5px_rgba(20,184,166,0.5)]"></div>
+      <div className="mt-6 flex flex-wrap items-center justify-center gap-6 text-xs text-secondary border-t border-slate-200 pt-4 font-bold uppercase tracking-wider">
+         <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-primary rounded-sm shadow-[0_0_5px_rgba(13,148,136,0.5)]"></div>
             <span>Streak</span>
          </div>
-         <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 bg-orange-500 rounded-sm shadow-[0_0_5px_rgba(249,115,22,0.5)]"></div>
+         <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-orange-500 rounded-sm shadow-[0_0_5px_rgba(249,115,22,0.5)]"></div>
             <span>Reset</span>
          </div>
-         <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 border border-primary rounded-sm"></div>
+         <div className="flex items-center gap-2">
+            <div className="w-3 h-3 border-2 border-primary rounded-sm"></div>
             <span>Today</span>
          </div>
       </div>
@@ -179,31 +179,28 @@ const StreakCalendar = ({ activeDates, overlapDates }: { activeDates: Set<string
 const StatCard = ({ label, value, icon: Icon, colorClass = "text-text", onClick, active = false }: any) => (
   <div 
     onClick={onClick}
-    className={`bg-surface rounded-2xl p-4 flex flex-col items-center justify-center shadow-lg border transition-all cursor-pointer select-none
-      ${active ? 'border-primary ring-1 ring-primary' : 'border-slate-700/50 hover:border-slate-600 active:scale-95'}
+    className={`bg-surface rounded-3xl p-4 sm:p-6 flex flex-col items-center justify-center shadow-sm border transition-all cursor-pointer select-none h-full relative overflow-hidden group
+      ${active ? 'border-primary ring-4 ring-primary/20' : 'border-slate-200 hover:border-slate-300 active:scale-[0.98] hover:shadow-lg hover:-translate-y-1'}
     `}
   >
-    <div className={`mb-2 p-2 rounded-full bg-background ${colorClass}`}>
-      <Icon size={20} />
+    <div className={`mb-4 p-4 rounded-full bg-slate-50 ${colorClass} shadow-sm ring-1 ring-black/5`}>
+      <Icon size={32} strokeWidth={2.5} />
     </div>
-    <span className="text-secondary text-xs uppercase tracking-wider font-bold">{label}</span>
-    <span className="text-2xl font-bold mt-1">{value}</span>
+    <span className="text-secondary text-sm uppercase tracking-[0.2em] font-black opacity-80">{label}</span>
+    <span className="text-5xl sm:text-6xl font-black mt-2 tracking-tighter text-text drop-shadow-sm">{value}</span>
   </div>
 );
 
 const ProgressBar = ({ current, max }: { current: number; max: number }) => {
   const percentage = Math.min(100, Math.max(0, (current / max) * 100));
-  const radius = 90; // Slightly larger
-  const stroke = 12;
+  const radius = 155; // Increased size to 310px diameter
+  const stroke = 22; 
   const normalizedRadius = radius - stroke * 2;
   const circumference = normalizedRadius * 2 * Math.PI;
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
   return (
-    <div className="relative flex items-center justify-center group">
-       {/* Background Glow */}
-       <div className="absolute inset-0 bg-primary/5 blur-3xl rounded-full scale-110 opacity-50 animate-pulse"></div>
-       
+    <div className="relative flex items-center justify-center group my-8">
       <svg
         height={radius * 2}
         width={radius * 2}
@@ -211,12 +208,12 @@ const ProgressBar = ({ current, max }: { current: number; max: number }) => {
       >
          <defs>
           <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#14b8a6" />
-            <stop offset="50%" stopColor="#2dd4bf" />
-            <stop offset="100%" stopColor="#0f766e" />
+            <stop offset="0%" stopColor="#0d9488" />
+            <stop offset="50%" stopColor="#14b8a6" />
+            <stop offset="100%" stopColor="#2dd4bf" />
           </linearGradient>
           <filter id="glow">
-             <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+             <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
              <feMerge>
                  <feMergeNode in="coloredBlur"/>
                  <feMergeNode in="SourceGraphic"/>
@@ -224,7 +221,7 @@ const ProgressBar = ({ current, max }: { current: number; max: number }) => {
           </filter>
         </defs>
         <circle
-          stroke="#1e293b"
+          stroke="#e2e8f0"
           strokeWidth={stroke}
           fill="transparent"
           r={normalizedRadius}
@@ -246,13 +243,13 @@ const ProgressBar = ({ current, max }: { current: number; max: number }) => {
         />
       </svg>
       <div className="absolute flex flex-col items-center z-20">
-        <span className="text-6xl font-bold text-white tracking-tighter drop-shadow-lg">{current}</span>
-        <span className="text-xs text-secondary font-bold uppercase tracking-widest mb-2">DAYS</span>
+        <span className="text-[9rem] leading-none font-black text-text tracking-tighter drop-shadow-sm">{current}</span>
+        <span className="text-xl text-secondary font-black uppercase tracking-[0.25em] -mt-2 mb-4">DAYS</span>
         
         {/* Percentage Badge */}
-        <div className="flex items-center gap-1.5 bg-surface/80 border border-slate-700/50 px-3 py-1 rounded-full shadow-lg backdrop-blur-md">
-            <Target size={12} className="text-primary" />
-            <span className="text-xs font-mono font-bold text-primary">{percentage.toFixed(0)}%</span>
+        <div className="flex items-center gap-1.5 bg-white/90 border border-slate-200 px-4 py-1.5 rounded-full shadow-md backdrop-blur-md mt-2">
+            <Target size={14} className="text-primary" />
+            <span className="text-base font-mono font-bold text-primary">{percentage.toFixed(0)}%</span>
         </div>
       </div>
     </div>
@@ -326,6 +323,12 @@ export default function App() {
 
   const currentDays = useMemo(() => {
     return data && data.currentStreakStart ? calculateDays(data.currentStreakStart) : 0;
+  }, [data]);
+
+  const goalReachDate = useMemo(() => {
+    if (!data || !data.currentStreakStart) return null;
+    const targetDate = new Date(data.currentStreakStart + (data.goal * MILLIS_PER_DAY));
+    return targetDate.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
   }, [data]);
 
   const handleFetchMotivation = async () => {
@@ -637,20 +640,20 @@ export default function App() {
       {/* --- Top Bar --- */}
       <header className="p-6 flex justify-between items-center max-w-md mx-auto w-full">
         <div>
-          <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-            <Flame className="text-primary" size={24} fill="currentColor" />
-            ZenStreak
+          <h1 className="text-xl font-black tracking-tight text-text flex items-center gap-2">
+            <Flame className="text-primary" size={28} fill="currentColor" />
+            Streaker
           </h1>
         </div>
         <div>
           {user ? (
-            <button onClick={() => logout()} className="p-2 bg-surface rounded-full text-secondary hover:text-white transition-colors">
-              <LogOut size={20} />
+            <button onClick={() => logout()} className="p-2 bg-slate-100 rounded-full text-secondary hover:text-primary transition-colors">
+              <LogOut size={24} />
             </button>
           ) : (
             isFirebaseInitialized && (
-              <button onClick={() => signInWithGoogle()} className="flex items-center gap-2 text-sm font-semibold bg-surface hover:bg-slate-700 px-3 py-1.5 rounded-full transition-colors">
-                <UserIcon size={16} /> Sign In
+              <button onClick={() => signInWithGoogle()} className="flex items-center gap-2 text-sm font-bold bg-white border border-slate-200 hover:bg-slate-50 px-4 py-2 rounded-full transition-colors">
+                <UserIcon size={18} /> Sign In
               </button>
             )
           )}
@@ -664,150 +667,160 @@ export default function App() {
           <div className="animate-fade-in flex flex-col gap-6">
             
             {/* Progress Section */}
-            <div className="flex flex-col items-center justify-center pt-4">
+            <div className="flex flex-col items-center justify-center pt-8">
               <ProgressBar current={currentDays} max={data.goal} />
               
-              {/* Context Text below Progress Bar */}
-              <div className="mt-4 text-center">
-                 <p className="text-secondary text-sm">
-                   {currentDays >= data.goal 
-                     ? <span className="text-primary font-bold flex items-center justify-center gap-1"><Trophy size={14}/> Goal Reached!</span>
-                     : <span><span className="text-white font-bold">{data.goal - currentDays}</span> days until goal</span>
-                   }
-                 </p>
-              </div>
-
-              {/* Date Display / Edit Control */}
-              {!isEditingStart ? (
-                <button 
-                  onClick={startEditingDate}
-                  className="mt-2 flex items-center gap-2 text-xs text-secondary hover:text-primary transition-colors px-3 py-1 rounded-full hover:bg-surface border border-transparent hover:border-slate-700/50"
-                >
-                  <span>Started {new Date(data.currentStreakStart || Date.now()).toLocaleDateString()}</span>
-                  <PenLine size={12} />
-                </button>
-              ) : (
-                <div className="mt-4 flex flex-col items-center gap-2 animate-fade-in bg-surface p-2 rounded-xl border border-primary/30">
-                  <span className="text-xs font-bold text-primary uppercase">Set Start Date</span>
-                  <div className="flex items-center gap-2">
-                    <input 
-                      type="date" 
-                      value={tempStartDate}
-                      onChange={(e) => setTempStartDate(e.target.value)}
-                      className="bg-background border border-slate-600 rounded p-1.5 text-white text-sm focus:border-primary outline-none"
-                    />
-                    <button onClick={saveStartDate} className="p-1.5 bg-primary text-black rounded hover:bg-teal-400">
-                      <Check size={16}/>
-                    </button>
-                    <button onClick={() => setIsEditingStart(false)} className="p-1.5 bg-slate-700 text-white rounded hover:bg-slate-600">
-                      <X size={16}/>
-                    </button>
-                  </div>
-                </div>
-              )}
-              
-              <div className="mt-6 grid grid-cols-2 gap-4 w-full h-32">
-                {/* Goal Card (Editable) */}
+              {/* Goal / Context Section */}
+              <div className="mt-8 w-full max-w-xs mx-auto min-h-[140px] flex flex-col items-center justify-start">
                 {isEditingGoal ? (
-                   <div className="bg-surface rounded-2xl p-2 sm:p-3 flex flex-col items-center justify-center shadow-lg border border-primary ring-1 ring-primary h-full relative overflow-hidden">
-                     {/* Toggle */}
-                     <div className="flex w-full mb-2 bg-slate-900 rounded-lg p-0.5">
-                        <button 
-                          onClick={() => setGoalMode('days')}
-                          className={`flex-1 text-[10px] font-bold py-1 rounded-md transition-all ${goalMode === 'days' ? 'bg-primary text-black shadow' : 'text-secondary hover:text-white'}`}
-                        >
-                          DAYS
-                        </button>
-                        <button 
-                          onClick={() => setGoalMode('date')}
-                          className={`flex-1 text-[10px] font-bold py-1 rounded-md transition-all ${goalMode === 'date' ? 'bg-primary text-black shadow' : 'text-secondary hover:text-white'}`}
-                        >
-                          DATE
-                        </button>
-                     </div>
+                     <div className="w-full bg-white p-5 rounded-3xl shadow-xl border border-primary/20 animate-fade-in z-20">
+                         <div className="flex w-full mb-3 bg-slate-100 rounded-xl p-1">
+                            <button 
+                              onClick={() => setGoalMode('days')}
+                              className={`flex-1 text-[10px] font-black py-2.5 rounded-lg transition-all ${goalMode === 'days' ? 'bg-primary text-white shadow' : 'text-secondary hover:text-text'}`}
+                            >
+                              DAYS
+                            </button>
+                            <button 
+                              onClick={() => setGoalMode('date')}
+                              className={`flex-1 text-[10px] font-black py-2.5 rounded-lg transition-all ${goalMode === 'date' ? 'bg-primary text-white shadow' : 'text-secondary hover:text-text'}`}
+                            >
+                              DATE
+                            </button>
+                         </div>
 
-                     <div className="flex items-center gap-2 mb-1 flex-1">
-                       {goalMode === 'days' ? (
-                          <div className="flex flex-col items-center">
-                            <input 
-                              type="number" 
-                              value={tempGoal}
-                              onChange={(e) => setTempGoal(e.target.value)}
-                              className="w-16 bg-background border border-slate-600 rounded p-1 text-center text-lg font-bold text-white focus:border-primary outline-none"
-                              autoFocus
-                            />
-                            <span className="text-[10px] text-secondary mt-1">Total Days</span>
-                          </div>
-                       ) : (
-                          <div className="flex flex-col items-center">
-                            <input 
-                              type="date" 
-                              value={tempGoalDate}
-                              onChange={(e) => setTempGoalDate(e.target.value)}
-                              className="w-24 bg-background border border-slate-600 rounded p-1 text-center text-xs font-bold text-white focus:border-primary outline-none"
-                              autoFocus
-                            />
-                            <span className="text-[10px] text-secondary mt-1">Goal Date</span>
-                          </div>
-                       )}
-                     </div>
+                         <div className="flex items-center gap-2 mb-4 justify-center">
+                           {goalMode === 'days' ? (
+                              <div className="flex flex-col items-center w-full">
+                                <input 
+                                  type="number" 
+                                  value={tempGoal}
+                                  onChange={(e) => setTempGoal(e.target.value)}
+                                  className="w-full bg-transparent border-b-2 border-slate-300 p-1 text-center text-4xl font-black text-text focus:border-primary outline-none"
+                                  autoFocus
+                                />
+                                <span className="text-[10px] text-secondary mt-1 font-black uppercase tracking-widest">Target Days</span>
+                              </div>
+                           ) : (
+                              <div className="flex flex-col items-center w-full">
+                                <input 
+                                  type="date" 
+                                  value={tempGoalDate}
+                                  onChange={(e) => setTempGoalDate(e.target.value)}
+                                  className="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 text-center text-sm font-bold text-text focus:border-primary outline-none"
+                                  autoFocus
+                                />
+                                <span className="text-[10px] text-secondary mt-1 font-black uppercase tracking-widest">Target Date</span>
+                              </div>
+                           )}
+                         </div>
 
-                     <div className="flex w-full gap-2 mt-auto">
-                         <button onClick={saveGoal} className="flex-1 p-1 bg-primary text-black rounded hover:bg-teal-400 flex justify-center">
-                           <Check size={14} />
-                         </button>
-                         <button onClick={() => { setIsEditingGoal(false); setTempGoal(data.goal.toString()); }} className="flex-1 p-1 bg-slate-700 text-white rounded hover:bg-slate-600 flex justify-center">
-                           <X size={14} />
-                         </button>
-                       </div>
-                   </div>
+                         <div className="flex w-full gap-2">
+                             <button onClick={saveGoal} className="flex-1 p-3 bg-primary text-white rounded-xl hover:bg-teal-500 flex justify-center shadow-sm">
+                               <Check size={20} strokeWidth={3} />
+                             </button>
+                             <button onClick={() => { setIsEditingGoal(false); setTempGoal(data.goal.toString()); }} className="flex-1 p-3 bg-slate-100 text-text rounded-xl hover:bg-slate-200 flex justify-center shadow-sm">
+                               <X size={20} strokeWidth={3} />
+                             </button>
+                           </div>
+                     </div>
                 ) : (
-                  <StatCard 
-                    label="Goal Progress" 
-                    value={`${currentDays} / ${data.goal}`} 
-                    icon={Trophy} 
-                    colorClass="text-yellow-500" 
-                    onClick={() => { setIsEditingGoal(true); setGoalMode('days'); }}
-                  />
+                    <>
+                         {currentDays >= data.goal ? (
+                            <div className="text-primary font-black flex items-center justify-center gap-2 text-3xl animate-bounce mb-6">
+                                <Trophy size={36}/> 
+                                <span>Goal Reached!</span>
+                            </div>
+                         ) : (
+                            <div className="flex flex-col items-center leading-none mb-6">
+                                <span className="text-7xl font-black text-text tracking-tighter">{data.goal - currentDays}</span>
+                                <span className="text-sm font-bold text-secondary uppercase tracking-widest mt-2">Days Remaining</span>
+                            </div>
+                         )}
+                        
+                         {/* Target Date Pill */}
+                         <div 
+                            className="bg-white border border-slate-200 rounded-full p-1.5 pl-5 pr-1.5 flex items-center gap-4 shadow-sm hover:shadow-md transition-all"
+                         >
+                            <span className="text-sm font-bold text-text">Target: {goalReachDate}</span>
+                            <button 
+                                onClick={() => { setIsEditingGoal(true); setGoalMode('days'); }}
+                                className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center hover:bg-primary/20 text-slate-400 hover:text-primary transition-colors"
+                            >
+                                <Edit2 size={14} />
+                            </button>
+                         </div>
+                    </>
                 )}
-                
-                <StatCard label="Best" value={`${longestStreak} Days`} icon={Flame} colorClass="text-orange-500" />
               </div>
+
+              {/* Start Date Display / Edit Control */}
+              <div className="mt-4">
+                  {!isEditingStart ? (
+                    <button 
+                      onClick={startEditingDate}
+                      className="flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-primary transition-colors px-4 py-1.5 rounded-full hover:bg-slate-50"
+                    >
+                      <span>Started {new Date(data.currentStreakStart || Date.now()).toLocaleDateString()}</span>
+                      <PenLine size={10} />
+                    </button>
+                  ) : (
+                    <div className="flex flex-col items-center gap-2 animate-fade-in bg-white p-4 rounded-2xl border border-primary/30 shadow-lg relative z-20">
+                      <span className="text-xs font-black text-primary uppercase tracking-wider">Set Start Date</span>
+                      <div className="flex items-center gap-2">
+                        <input 
+                          type="date" 
+                          value={tempStartDate}
+                          onChange={(e) => setTempStartDate(e.target.value)}
+                          className="bg-slate-50 border border-slate-300 rounded-lg p-2 text-text text-sm focus:border-primary outline-none"
+                        />
+                        <button onClick={saveStartDate} className="p-2 bg-primary text-white rounded-lg hover:bg-teal-500">
+                          <Check size={16}/>
+                        </button>
+                        <button onClick={() => setIsEditingStart(false)} className="p-2 bg-slate-100 text-text rounded-lg hover:bg-slate-200">
+                          <X size={16}/>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+              </div>
+            </div>
+            
+            {/* Best Streak Card - Full Width */}
+            <div className="w-full">
+                <StatCard label="Best Streak" value={`${longestStreak}`} icon={Flame} colorClass="text-orange-600" />
             </div>
 
             {/* Motivation Card */}
             {(data.showMotivation ?? true) && (
-              <div className="relative group overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700/50 rounded-2xl p-6 shadow-xl animate-fade-in">
-                 <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <Sparkles size={60} />
-                 </div>
-                 <div className="flex flex-col gap-2 relative z-10">
+              <div className="relative group overflow-hidden bg-gradient-to-br from-indigo-50 to-slate-50 border border-slate-200 rounded-3xl p-6 shadow-sm animate-fade-in hover:border-primary/30 transition-colors">
+                 <div className="flex flex-col gap-4 relative z-10">
                    <div className="flex justify-between items-start">
-                      <span className="text-[10px] font-bold text-primary uppercase tracking-widest flex items-center gap-1.5">
-                         <Sparkles size={12} /> Daily Stoic Wisdom
+                      <span className="text-xs font-black text-primary uppercase tracking-[0.2em] flex items-center gap-2">
+                         <Sparkles size={16} /> Daily Wisdom
                       </span>
                       <button 
                         onClick={handleFetchMotivation}
                         disabled={loadingMotivation}
-                        className="text-slate-500 hover:text-white transition-colors disabled:animate-spin"
+                        className="text-slate-400 hover:text-primary transition-colors disabled:animate-spin p-1 hover:bg-slate-100 rounded-full"
                       >
-                         <RefreshCw size={14} />
+                         <RefreshCw size={18} />
                       </button>
                    </div>
-                   <p className="text-sm md:text-base text-slate-200 font-medium leading-relaxed italic min-h-[40px] flex items-center">
+                   <p className="text-lg md:text-xl text-slate-700 font-medium leading-relaxed italic min-h-[60px] flex items-center">
                       {loadingMotivation ? "Consulting the oracle..." : `"${motivation}"`}
                    </p>
                  </div>
               </div>
             )}
 
-            {/* Action Buttons - Moved Here */}
-            <div className="flex flex-col gap-3">
+            {/* Action Buttons */}
+            <div className="flex flex-col gap-3 pb-8">
               <button 
                 onClick={() => setShowResetConfirm(true)}
-                className="w-full py-4 rounded-xl bg-surface border border-red-900/30 text-danger font-bold uppercase tracking-widest hover:bg-red-900/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                className="w-full py-5 rounded-2xl bg-white border border-red-200 text-danger font-black uppercase tracking-[0.2em] hover:bg-red-50 active:scale-[0.98] transition-all flex items-center justify-center gap-3 shadow-sm group hover:border-red-300"
               >
-                <RotateCcw size={20} />
+                <RotateCcw size={22} className="group-hover:rotate-180 transition-transform duration-500" />
                 Relapse / Reset
               </button>
             </div>
@@ -817,34 +830,34 @@ export default function App() {
 
         {view === 'history' && data && (
           <div className="animate-fade-in flex flex-col gap-6">
-            <h2 className="text-2xl font-bold">History</h2>
+            <h2 className="text-3xl font-black text-text tracking-tight">History</h2>
 
             {/* Chart - Bar Chart Replacement */}
-            <div className="bg-surface p-4 rounded-2xl border border-slate-700 h-64 w-full relative">
-              <h3 className="text-sm text-secondary font-bold mb-4 uppercase flex items-center gap-2">
-                 <Target size={16} className="text-primary"/>
-                 Streak Evolution <span className="text-[10px] text-slate-500 normal-case">(Last 15)</span>
+            <div className="bg-surface p-6 rounded-3xl border border-slate-200 h-72 w-full relative shadow-sm">
+              <h3 className="text-sm text-secondary font-black mb-6 uppercase tracking-wider flex items-center gap-2">
+                 <Target size={18} className="text-primary"/>
+                 Streak Evolution <span className="text-[10px] text-slate-400 normal-case font-medium">(Last 15)</span>
               </h3>
-              <ResponsiveContainer width="100%" height="85%">
+              <ResponsiveContainer width="100%" height="80%">
                 <BarChart data={chartData} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} opacity={0.5} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} opacity={0.6} />
                   <XAxis dataKey="index" hide />
                   <YAxis 
-                    stroke="#64748b" 
-                    fontSize={10} 
+                    stroke="#94a3b8" 
+                    fontSize={12} 
                     tickLine={false} 
                     axisLine={false} 
                     tickFormatter={(value) => `${value}`}
                   />
                   <Tooltip 
-                    cursor={{fill: '#334155', opacity: 0.2}}
+                    cursor={{fill: '#f1f5f9', opacity: 0.5}}
                     content={({ active, payload }) => {
                       if (active && payload && payload.length) {
                         const data = payload[0].payload;
                         return (
-                          <div className="bg-slate-800 border border-slate-600 p-2 rounded-lg shadow-xl text-xs">
-                             <p className="text-slate-400 mb-1">{data.dateLabel}</p>
-                             <p className="text-primary font-bold text-lg">{data.days} <span className="text-xs font-normal text-white">Days</span></p>
+                          <div className="bg-white border border-slate-200 p-3 rounded-xl shadow-lg text-xs">
+                             <p className="text-slate-500 mb-1 font-bold">{data.dateLabel}</p>
+                             <p className="text-primary font-black text-2xl">{data.days} <span className="text-xs font-bold text-text uppercase">Days</span></p>
                           </div>
                         );
                       }
@@ -853,11 +866,11 @@ export default function App() {
                   />
                   <Bar 
                     dataKey="days" 
-                    radius={[4, 4, 0, 0]}
+                    radius={[6, 6, 0, 0]}
                     animationDuration={1500}
                   >
                      {chartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.days >= data.goal ? '#f59e0b' : '#14b8a6'} />
+                        <Cell key={`cell-${index}`} fill={entry.days >= data.goal ? '#facc15' : '#0d9488'} />
                      ))}
                   </Bar>
                 </BarChart>
@@ -868,124 +881,127 @@ export default function App() {
             <StreakCalendar activeDates={activeStreakDays} overlapDates={overlapDates} />
 
             {/* Manual Add */}
-            <div className="bg-surface p-5 rounded-2xl border border-slate-700">
-              <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
-                <Plus size={16} className="text-primary"/> 
+            <div className="bg-surface p-6 rounded-3xl border border-slate-200 shadow-sm">
+              <h3 className="text-base font-black text-text mb-6 flex items-center gap-3 uppercase tracking-wide">
+                <Plus size={20} className="text-primary"/> 
                 Log Past Streak
               </h3>
-              <div className="flex flex-col gap-3">
-                <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs text-secondary mb-1 block">Start Date</label>
+                    <label className="text-xs text-secondary mb-2 block font-black uppercase tracking-wider">Start Date</label>
                     <input 
                       type="date" 
                       value={manualStartDate}
                       onChange={(e) => setManualStartDate(e.target.value)}
-                      className="w-full bg-background border border-slate-600 rounded-lg p-3 text-white text-sm focus:border-primary outline-none"
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-text text-sm font-bold focus:border-primary outline-none transition-colors"
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-secondary mb-1 block">End Date</label>
+                    <label className="text-xs text-secondary mb-2 block font-black uppercase tracking-wider">End Date</label>
                     <input 
                       type="date" 
                       value={manualEndDate}
                       onChange={(e) => setManualEndDate(e.target.value)}
-                      className="w-full bg-background border border-slate-600 rounded-lg p-3 text-white text-sm focus:border-primary outline-none"
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-text text-sm font-bold focus:border-primary outline-none transition-colors"
                     />
                   </div>
                 </div>
                 
                 {manualDaysCalculated > 0 && (
-                  <div className="bg-slate-900/50 p-2 rounded text-center border border-slate-700/50">
-                     <span className="text-xs text-secondary">Calculated Duration:</span> <span className="text-primary font-bold">{manualDaysCalculated} Days</span>
+                  <div className="bg-slate-100 p-4 rounded-xl text-center border border-slate-200 flex items-center justify-between px-6">
+                     <span className="text-xs text-secondary uppercase font-bold">Calculated Duration</span> 
+                     <span className="text-primary font-black text-2xl">{manualDaysCalculated} <span className="text-sm text-secondary">Days</span></span>
                   </div>
                 )}
 
                 <button 
                   onClick={handleManualAdd}
-                  className="mt-2 w-full bg-primary text-background font-bold py-3 rounded-lg hover:bg-teal-400 transition-colors flex items-center justify-center gap-2"
+                  className="mt-2 w-full bg-primary text-white font-black uppercase tracking-[0.1em] py-4 rounded-xl hover:bg-teal-500 transition-colors flex items-center justify-center gap-2 shadow-sm hover:shadow-primary/20"
                 >
-                  <Calculator size={18} /> Add Record
+                  <Calculator size={20} strokeWidth={2.5} /> Add Record
                 </button>
               </div>
             </div>
 
             {/* List with Sorting */}
-            <div className="flex flex-col gap-3 pb-20">
-              <div className="flex justify-between items-end mb-1">
-                 <h3 className="text-sm font-bold text-secondary uppercase flex items-center gap-2">
-                   <ListFilter size={14} /> Recent Logs
+            <div className="flex flex-col gap-4 pb-20">
+              <div className="flex justify-between items-end mb-2">
+                 <h3 className="text-sm font-black text-secondary uppercase flex items-center gap-2 tracking-wider">
+                   <ListFilter size={18} /> Recent Logs
                  </h3>
                  
                  {/* Sort Controls */}
-                 <div className="flex bg-surface rounded-lg p-1 border border-slate-700/50 gap-1">
+                 <div className="flex bg-surface rounded-xl p-1.5 border border-slate-200 gap-1">
                     <button 
                       onClick={() => toggleSort('date')}
-                      className={`px-2 py-1 rounded text-[10px] font-bold flex items-center gap-1 transition-all ${sortConfig.key === 'date' ? 'bg-primary text-black' : 'text-slate-400 hover:text-white'}`}
+                      className={`px-3 py-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all ${sortConfig.key === 'date' ? 'bg-primary text-white shadow-sm' : 'text-slate-400 hover:text-text'}`}
                     >
-                       Date {sortConfig.key === 'date' && (sortConfig.direction === 'desc' ? <ArrowDown size={10}/> : <ArrowUp size={10}/>)}
+                       Date {sortConfig.key === 'date' && (sortConfig.direction === 'desc' ? <ArrowDown size={12}/> : <ArrowUp size={12}/>)}
                     </button>
                     <button 
                       onClick={() => toggleSort('days')}
-                      className={`px-2 py-1 rounded text-[10px] font-bold flex items-center gap-1 transition-all ${sortConfig.key === 'days' ? 'bg-primary text-black' : 'text-slate-400 hover:text-white'}`}
+                      className={`px-3 py-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all ${sortConfig.key === 'days' ? 'bg-primary text-white shadow-sm' : 'text-slate-400 hover:text-text'}`}
                     >
-                       Days {sortConfig.key === 'days' && (sortConfig.direction === 'desc' ? <ArrowDown size={10}/> : <ArrowUp size={10}/>)}
+                       Days {sortConfig.key === 'days' && (sortConfig.direction === 'desc' ? <ArrowDown size={12}/> : <ArrowUp size={12}/>)}
                     </button>
                  </div>
               </div>
 
               {sortedHistory.length === 0 ? (
-                <div className="text-center py-8 text-secondary italic">No history recorded yet.</div>
+                <div className="text-center py-12 text-secondary italic bg-surface rounded-2xl border border-slate-200 border-dashed">
+                    No history recorded yet.
+                </div>
               ) : (
                 sortedHistory.map((streak) => (
-                  <div key={streak.id} className="bg-surface p-4 rounded-xl border border-slate-700/50 transition-all">
+                  <div key={streak.id} className="bg-surface p-5 rounded-2xl border border-slate-200 transition-all hover:border-slate-300 shadow-sm hover:shadow-md">
                     {editingHistoryId === streak.id ? (
-                      <div className="flex flex-col gap-3 animate-fade-in">
+                      <div className="flex flex-col gap-4 animate-fade-in">
                         <div className="flex items-center gap-2 mb-1">
-                          <Edit2 size={14} className="text-primary" />
-                          <span className="text-xs font-bold text-primary">EDITING RECORD</span>
+                          <Edit2 size={16} className="text-primary" />
+                          <span className="text-xs font-black text-primary tracking-widest">EDITING RECORD</span>
                         </div>
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-2 gap-4">
                            <div>
-                             <label className="text-[10px] text-secondary uppercase font-bold mb-1 block">Start</label>
-                             <input type="date" value={editStartDate} onChange={e => setEditStartDate(e.target.value)} className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-xs text-white focus:border-primary outline-none" />
+                             <label className="text-[10px] text-secondary uppercase font-black mb-1.5 block">Start</label>
+                             <input type="date" value={editStartDate} onChange={e => setEditStartDate(e.target.value)} className="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 text-xs text-text focus:border-primary outline-none font-bold" />
                            </div>
                            <div>
-                             <label className="text-[10px] text-secondary uppercase font-bold mb-1 block">End</label>
-                             <input type="date" value={editEndDate} onChange={e => setEditEndDate(e.target.value)} className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-xs text-white focus:border-primary outline-none" />
+                             <label className="text-[10px] text-secondary uppercase font-black mb-1.5 block">End</label>
+                             <input type="date" value={editEndDate} onChange={e => setEditEndDate(e.target.value)} className="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 text-xs text-text focus:border-primary outline-none font-bold" />
                            </div>
                         </div>
-                        <div className="flex justify-between items-center bg-slate-900/30 p-2 rounded">
-                           <span className="text-xs text-secondary">Duration:</span>
-                           <span className="text-primary font-bold">{editDaysCalculated} Days</span>
+                        <div className="flex justify-between items-center bg-slate-100 p-4 rounded-xl border border-slate-200">
+                           <span className="text-xs text-secondary font-black uppercase">Duration</span>
+                           <span className="text-primary font-black text-2xl">{editDaysCalculated} Days</span>
                         </div>
-                        <div className="flex gap-2 mt-1">
-                           <button onClick={saveHistoryEdit} className="flex-1 bg-primary text-black p-2 rounded text-xs font-bold flex items-center justify-center gap-1 hover:bg-teal-400">
-                             <Save size={14} /> Save
+                        <div className="flex gap-2 mt-2">
+                           <button onClick={saveHistoryEdit} className="flex-1 bg-primary text-white p-3 rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-teal-500">
+                             <Save size={16} /> Save
                            </button>
-                           <button onClick={() => deleteHistoryItem(streak.id)} className="p-2 bg-red-900/20 text-danger border border-red-900/30 rounded hover:bg-red-900/40">
-                             <Trash2 size={14} />
+                           <button onClick={() => deleteHistoryItem(streak.id)} className="p-3 bg-red-50 text-danger border border-red-200 rounded-xl hover:bg-red-100">
+                             <Trash2 size={16} />
                            </button>
-                           <button onClick={cancelEditingHistory} className="p-2 bg-slate-700 text-white rounded hover:bg-slate-600">
-                             <X size={14} />
+                           <button onClick={cancelEditingHistory} className="p-3 bg-slate-200 text-text rounded-xl hover:bg-slate-300">
+                             <X size={16} />
                            </button>
                         </div>
                       </div>
                     ) : (
                       <div className="flex justify-between items-center group">
                         <div className="flex flex-col">
-                          <span className="text-xl font-bold text-white">{streak.days} <span className="text-sm font-normal text-secondary">Days</span></span>
-                          <div className="flex items-center gap-1 text-xs text-slate-500 mt-1">
-                            <CalendarIcon size={12} />
+                          <span className="text-4xl font-black text-text tracking-tighter">{streak.days} <span className="text-sm font-black text-secondary uppercase tracking-widest ml-1">Days</span></span>
+                          <div className="flex items-center gap-2 text-xs font-bold text-slate-400 mt-2">
+                            <CalendarIcon size={14} className="text-slate-400" />
                             <span>{new Date(streak.startDate).toLocaleDateString()}</span>
-                            <ArrowRight size={10} />
+                            <ArrowRight size={12} className="text-slate-400"/>
                             <span>{new Date(streak.endDate).toLocaleDateString()}</span>
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
-                            {streak.days >= data.goal && <Trophy size={20} className="text-yellow-500" />}
-                            <button onClick={() => startEditingHistory(streak)} className="p-2 text-slate-600 hover:text-white transition-colors bg-transparent hover:bg-slate-700/50 rounded-lg">
-                              <Edit2 size={16} />
+                            {streak.days >= data.goal && <Trophy size={28} className="text-yellow-500 drop-shadow-sm" />}
+                            <button onClick={() => startEditingHistory(streak)} className="p-3 text-slate-400 hover:text-primary transition-colors bg-transparent hover:bg-slate-100 rounded-xl">
+                              <Edit2 size={20} />
                             </button>
                         </div>
                       </div>
@@ -999,17 +1015,17 @@ export default function App() {
 
         {view === 'settings' && data && (
           <div className="animate-fade-in flex flex-col gap-6">
-            <h2 className="text-2xl font-bold">Settings</h2>
+            <h2 className="text-3xl font-black text-text tracking-tight">Settings</h2>
             
             {/* Preferences Section */}
-            <div className="bg-surface p-5 rounded-2xl border border-slate-700">
-               <h3 className="text-lg font-bold mb-4">Preferences</h3>
-               <div className="flex items-center justify-between p-3 bg-slate-900/50 rounded-lg border border-slate-700/50">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-slate-800 rounded-full text-primary">
-                       <Sparkles size={18} />
+            <div className="bg-surface p-6 rounded-3xl border border-slate-200 shadow-sm">
+               <h3 className="text-lg font-black mb-5 tracking-wide text-text">Preferences</h3>
+               <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-slate-200 rounded-full text-primary">
+                       <Sparkles size={24} />
                     </div>
-                    <span className="text-sm font-medium text-white">Daily Stoic Wisdom</span>
+                    <span className="text-sm font-bold text-text">Daily Stoic Wisdom</span>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input 
@@ -1018,34 +1034,34 @@ export default function App() {
                       checked={data.showMotivation ?? true}
                       onChange={toggleMotivation}
                     />
-                    <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                    <div className="w-14 h-7 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-primary"></div>
                   </label>
                </div>
             </div>
 
             {/* Account Section */}
-            <div className="bg-surface p-5 rounded-2xl border border-slate-700">
-              <h3 className="text-lg font-bold mb-4">Account</h3>
-              <p className="text-sm text-secondary mb-4">
+            <div className="bg-surface p-6 rounded-3xl border border-slate-200 shadow-sm">
+              <h3 className="text-lg font-black mb-5 tracking-wide text-text">Account</h3>
+              <p className="text-sm text-secondary mb-6 font-medium">
                 {user ? `Signed in as ${user.email}` : "Data is stored locally. Sign in to sync across devices."}
               </p>
               {user ? (
                 <button 
                   onClick={logout}
-                  className="w-full border border-slate-600 text-white font-bold py-3 rounded-lg hover:bg-slate-700 transition-colors flex items-center justify-center gap-2"
+                  className="w-full border-2 border-slate-300 text-text font-black uppercase tracking-wider py-4 rounded-xl hover:bg-slate-100 transition-colors flex items-center justify-center gap-2"
                 >
-                  <LogOut size={18} /> Sign Out
+                  <LogOut size={20} /> Sign Out
                 </button>
               ) : (
                 isFirebaseInitialized ? (
                   <button 
                     onClick={signInWithGoogle}
-                    className="w-full bg-white text-black font-bold py-3 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
+                    className="w-full bg-slate-900 text-white font-black uppercase tracking-wider py-4 rounded-xl hover:bg-slate-800 transition-colors flex items-center justify-center gap-3 shadow-lg"
                   >
-                    <UserIcon size={18} /> Sign In with Google
+                    <UserIcon size={20} /> Sign In with Google
                   </button>
                 ) : (
-                  <div className="p-3 bg-red-900/20 border border-red-900/50 rounded text-red-200 text-xs">
+                  <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-xs font-bold">
                     Sign-in unavailable.
                   </div>
                 )
@@ -1058,33 +1074,33 @@ export default function App() {
 
       {/* --- Reset Confirmation Modal --- */}
       {showResetConfirm && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-surface border border-slate-700 rounded-2xl p-6 max-w-sm w-full shadow-2xl transform transition-all scale-100">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-3 bg-red-500/10 rounded-full text-danger">
-                <AlertTriangle size={24} />
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white border border-slate-200 rounded-3xl p-8 max-w-sm w-full shadow-2xl transform transition-all scale-100">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="p-3 bg-red-100 rounded-full text-danger">
+                <AlertTriangle size={32} />
               </div>
-              <h3 className="text-xl font-bold text-white">Reset Streak?</h3>
+              <h3 className="text-2xl font-black text-text">Reset Streak?</h3>
             </div>
             
-            <p className="text-slate-300 mb-6 leading-relaxed text-sm">
-              This will end your current streak of <span className="text-primary font-bold text-base">{currentDays} days</span>.
+            <p className="text-slate-600 mb-8 leading-relaxed text-base font-medium">
+              This will end your current streak of <span className="text-primary font-black text-xl">{currentDays} days</span>.
               <br/><br/>
               Your progress will be saved to your history so you can track it later. Are you sure you want to restart from day 0?
             </p>
             
-            <div className="flex gap-3">
+            <div className="flex gap-4">
               <button 
                 onClick={() => setShowResetConfirm(false)} 
-                className="flex-1 py-3 rounded-xl bg-slate-800 text-white font-semibold hover:bg-slate-700 transition-colors"
+                className="flex-1 py-4 rounded-2xl bg-slate-100 text-text font-bold hover:bg-slate-200 transition-colors"
               >
                 Cancel
               </button>
               <button 
                 onClick={confirmReset} 
-                className="flex-1 py-3 rounded-xl bg-danger text-white font-bold hover:bg-red-600 shadow-lg shadow-red-900/20 transition-all active:scale-95"
+                className="flex-1 py-4 rounded-2xl bg-danger text-white font-black uppercase tracking-wider hover:bg-red-600 shadow-lg shadow-red-200 transition-all active:scale-95"
               >
-                Confirm Reset
+                Reset
               </button>
             </div>
           </div>
@@ -1092,7 +1108,7 @@ export default function App() {
       )}
 
       {/* --- Bottom Navigation (Mobile Friendly) --- */}
-      <nav className="fixed bottom-0 w-full bg-surface/90 backdrop-blur-lg border-t border-slate-700/50 pb-safe z-50">
+      <nav className="fixed bottom-0 w-full bg-white/90 backdrop-blur-lg border-t border-slate-200 pb-safe z-50">
         <div className="max-w-md mx-auto flex justify-around p-2">
           <NavButton 
             active={view === 'dashboard'} 
@@ -1121,9 +1137,9 @@ export default function App() {
 const NavButton = ({ active, onClick, icon: Icon, label }: any) => (
   <button 
     onClick={onClick}
-    className={`flex flex-col items-center justify-center w-full p-2 rounded-xl transition-all ${active ? 'text-primary bg-primary/10' : 'text-secondary hover:text-white'}`}
+    className={`flex flex-col items-center justify-center w-full p-2 rounded-2xl transition-all ${active ? 'text-primary bg-primary/10' : 'text-secondary hover:text-primary'}`}
   >
-    <Icon size={24} strokeWidth={active ? 2.5 : 2} />
-    <span className="text-[10px] font-medium mt-1">{label}</span>
+    <Icon size={28} strokeWidth={active ? 3 : 2} />
+    <span className="text-[10px] font-black mt-1 tracking-wide uppercase">{label}</span>
   </button>
 );
