@@ -191,20 +191,21 @@ const StatCard = ({ label, value, icon: Icon, colorClass = "text-text", onClick,
   </div>
 );
 
-const ProgressBar = ({ current, max }: { current: number; max: number }) => {
+const ProgressBar = ({ current, max, children }: { current: number; max: number; children?: React.ReactNode }) => {
   const percentage = Math.min(100, Math.max(0, (current / max) * 100));
-  const radius = 155; // Increased size to 310px diameter
+  const radius = 175; // Increased size (350px diameter) to accommodate content comfortably
   const stroke = 22; 
   const normalizedRadius = radius - stroke * 2;
   const circumference = normalizedRadius * 2 * Math.PI;
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
   return (
-    <div className="relative flex items-center justify-center group my-8">
+    <div className="relative flex items-center justify-center group my-8 select-none">
       <svg
         height={radius * 2}
         width={radius * 2}
         className="rotate-[-90deg] transition-all duration-500 ease-out relative z-10"
+        style={{ maxWidth: '100%', height: 'auto' }}
       >
          <defs>
           <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -242,15 +243,18 @@ const ProgressBar = ({ current, max }: { current: number; max: number }) => {
           className="transition-all duration-1000 ease-in-out"
         />
       </svg>
-      <div className="absolute flex flex-col items-center z-20">
-        <span className="text-[9rem] leading-none font-black text-text tracking-tighter drop-shadow-sm">{current}</span>
-        <span className="text-xl text-secondary font-black uppercase tracking-[0.25em] -mt-2 mb-4">DAYS</span>
+      <div className="absolute flex flex-col items-center z-20 w-full">
+        <span className="text-[8.5rem] leading-none font-black text-text tracking-tighter drop-shadow-sm">{current}</span>
+        <span className="text-lg text-secondary font-black uppercase tracking-[0.25em] -mt-2 mb-3">DAYS</span>
         
         {/* Percentage Badge */}
-        <div className="flex items-center gap-1.5 bg-white/90 border border-slate-200 px-4 py-1.5 rounded-full shadow-md backdrop-blur-md mt-2">
-            <Target size={14} className="text-primary" />
-            <span className="text-base font-mono font-bold text-primary">{percentage.toFixed(0)}%</span>
+        <div className="flex items-center gap-1.5 bg-white/80 border border-slate-200 px-3 py-1 rounded-full shadow-sm backdrop-blur-md mb-3">
+            <Target size={12} className="text-primary" />
+            <span className="text-xs font-mono font-bold text-primary">{percentage.toFixed(0)}%</span>
         </div>
+
+        {/* Injected Content (Start Date) */}
+        {children}
       </div>
     </div>
   );
@@ -668,7 +672,33 @@ export default function App() {
             
             {/* Progress Section */}
             <div className="flex flex-col items-center justify-center pt-8">
-              <ProgressBar current={currentDays} max={data.goal} />
+              <ProgressBar current={currentDays} max={data.goal}>
+                  {/* Start Date Display / Edit Control moved inside */}
+                  {!isEditingStart ? (
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); startEditingDate(); }}
+                      className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 hover:text-primary transition-colors px-3 py-1 rounded-full hover:bg-slate-50 border border-transparent hover:border-slate-200"
+                    >
+                      <span>Started {new Date(data.currentStreakStart || Date.now()).toLocaleDateString()}</span>
+                      <PenLine size={10} />
+                    </button>
+                  ) : (
+                    <div className="flex items-center gap-1 animate-fade-in bg-white/95 p-1.5 rounded-xl border border-primary/30 shadow-lg backdrop-blur-sm">
+                      <input 
+                        type="date" 
+                        value={tempStartDate}
+                        onChange={(e) => setTempStartDate(e.target.value)}
+                        className="bg-slate-50 border border-slate-300 rounded-md p-1 text-text text-[10px] focus:border-primary outline-none"
+                      />
+                      <button onClick={saveStartDate} className="p-1.5 bg-primary text-white rounded-md hover:bg-teal-500">
+                        <Check size={12}/>
+                      </button>
+                      <button onClick={() => setIsEditingStart(false)} className="p-1.5 bg-slate-100 text-text rounded-md hover:bg-slate-200">
+                        <X size={12}/>
+                      </button>
+                    </div>
+                  )}
+              </ProgressBar>
               
               {/* Goal / Context Section */}
               <div className="mt-8 w-full max-w-xs mx-auto min-h-[140px] flex flex-col items-center justify-start">
@@ -754,36 +784,6 @@ export default function App() {
                 )}
               </div>
 
-              {/* Start Date Display / Edit Control */}
-              <div className="mt-4">
-                  {!isEditingStart ? (
-                    <button 
-                      onClick={startEditingDate}
-                      className="flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-primary transition-colors px-4 py-1.5 rounded-full hover:bg-slate-50"
-                    >
-                      <span>Started {new Date(data.currentStreakStart || Date.now()).toLocaleDateString()}</span>
-                      <PenLine size={10} />
-                    </button>
-                  ) : (
-                    <div className="flex flex-col items-center gap-2 animate-fade-in bg-white p-4 rounded-2xl border border-primary/30 shadow-lg relative z-20">
-                      <span className="text-xs font-black text-primary uppercase tracking-wider">Set Start Date</span>
-                      <div className="flex items-center gap-2">
-                        <input 
-                          type="date" 
-                          value={tempStartDate}
-                          onChange={(e) => setTempStartDate(e.target.value)}
-                          className="bg-slate-50 border border-slate-300 rounded-lg p-2 text-text text-sm focus:border-primary outline-none"
-                        />
-                        <button onClick={saveStartDate} className="p-2 bg-primary text-white rounded-lg hover:bg-teal-500">
-                          <Check size={16}/>
-                        </button>
-                        <button onClick={() => setIsEditingStart(false)} className="p-2 bg-slate-100 text-text rounded-lg hover:bg-slate-200">
-                          <X size={16}/>
-                        </button>
-                      </div>
-                    </div>
-                  )}
-              </div>
             </div>
             
             {/* Best Streak Card - Full Width */}
