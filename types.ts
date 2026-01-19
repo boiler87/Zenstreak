@@ -1,3 +1,4 @@
+
 export interface StreakHistoryItem {
   id: string;
   startDate: number; // timestamp
@@ -11,6 +12,7 @@ export interface UserData {
   history: StreakHistoryItem[];
   uid?: string;
   showMotivation?: boolean;
+  totalEvents?: number; // Lifetime count of events
 }
 
 export interface MotivationResponse {

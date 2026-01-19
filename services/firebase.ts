@@ -1,5 +1,4 @@
-
-import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
+import { initializeApp, getApps, getApp, deleteApp, FirebaseApp } from 'firebase/app';
 import { 
   getFirestore, 
   doc, 
@@ -11,8 +10,6 @@ import {
   getAuth, 
   GoogleAuthProvider, 
   signInWithPopup, 
-  signInWithRedirect,
-  getRedirectResult,
   signOut, 
   onAuthStateChanged,
   setPersistence,
@@ -21,6 +18,7 @@ import {
 import type { User, Auth } from 'firebase/auth';
 import { UserData } from '../types';
 
+// Explicit configuration - this will be used regardless of environment
 const firebaseConfig = {
   apiKey: "AIzaSyDygmVHR9CQaC-00NZHFcWxQh1Gw6-N0eg",
   authDomain: "gen-lang-client-0839635573.firebaseapp.com",
@@ -35,67 +33,53 @@ let auth: Auth | undefined;
 let db: Firestore | undefined;
 let isFirebaseInitialized = false;
 
+// Debug: Log the key being used (partial)
+console.log("Initializing Firebase with Key ending in:", firebaseConfig.apiKey.slice(-4));
+// Debug: Log the hostname to help with authorized domain issues
+console.log("Current Hostname (Add this to Firebase Console > Auth > Settings > Authorized Domains):", window.location.hostname);
+
 try {
-  if (!getApps().length) {
-    app = initializeApp(firebaseConfig);
-  } else {
-    app = getApps()[0];
-  }
-  auth = getAuth(app);
-  db = getFirestore(app);
+  const APP_NAME = 'streaker-client-app';
   
-  // Set persistence to local (keeps user logged in across refreshes)
-  setPersistence(auth, browserLocalPersistence)
-    .catch((error) => console.error("Firebase persistence error:", error));
+  // Check if our specific app is already initialized
+  const existingApp = getApps().find(a => a.name === APP_NAME);
+  
+  if (existingApp) {
+    app = existingApp;
+  } else {
+    app = initializeApp(firebaseConfig, APP_NAME);
+  }
 
-  // Check for redirect result (needed for mobile sign-in flow)
-  getRedirectResult(auth)
-    .then((result) => {
-      if (result) {
-        console.log("User signed in via redirect");
-      }
-    })
-    .catch((error) => {
-      console.error("Firebase redirect login error:", error);
-    });
+  // Initialize Auth with persistence
+  auth = getAuth(app);
+  
+  // Ensure persistence is set to local
+  setPersistence(auth, browserLocalPersistence).catch(err => 
+    console.error("Persistence setup failed:", err)
+  );
 
+  db = getFirestore(app);
   isFirebaseInitialized = true;
 } catch (error) {
-  console.error("Firebase initialization failed:", error);
+  console.error("Firebase initialization critical error:", error);
 }
 
-const LOCAL_STORAGE_DATA_KEY = 'streaker_data';
+const LOCAL_STORAGE_DATA_KEY = 'zenstreak_data';
 
-export const signInWithGoogle = async (): Promise<User | null> => {
-  if (!auth) throw new Error("Authentication not initialized");
-  
+export const signInWithGoogle = async (): Promise<void> => {
+  if (!auth) {
+    throw new Error("Firebase Auth not initialized");
+  }
   const provider = new GoogleAuthProvider();
-
+  // Force account selection to avoid auto-login issues
+  provider.setCustomParameters({
+    prompt: 'select_account'
+  });
+  
   try {
-    // Try popup first (better for desktop)
-    const result = await signInWithPopup(auth, provider);
-    return result.user;
-  } catch (error: any) {
-    console.error("Popup sign-in error:", error);
-    
-    // If popup is blocked or fails (common on mobile), try redirect
-    if (
-      error.code === 'auth/popup-blocked' || 
-      error.code === 'auth/popup-closed-by-user' ||
-      error.code === 'auth/cancelled-popup-request' ||
-      error.code === 'auth/operation-not-supported-in-this-environment'
-    ) {
-      try {
-        console.log("Falling back to redirect sign-in...");
-        await signInWithRedirect(auth, provider);
-        // Does not return, page will reload
-        return null;
-      } catch (redirectError) {
-        console.error("Redirect sign-in error:", redirectError);
-        throw redirectError;
-      }
-    }
-    
+    await signInWithPopup(auth, provider);
+  } catch (error) {
+    console.error("Sign in failed", error);
     throw error;
   }
 };
@@ -109,6 +93,7 @@ export const subscribeToAuth = (callback: (user: User | null) => void) => {
     callback(null);
     return () => {};
   }
+
   return onAuthStateChanged(auth, callback);
 };
 
@@ -117,10 +102,10 @@ export const getUserData = async (user: User | null): Promise<UserData> => {
     currentStreakStart: Date.now(),
     goal: 30,
     history: [],
-    showMotivation: true
+    showMotivation: true,
+    totalEvents: 0
   };
 
-  // Check local first for immediate response
   const local = localStorage.getItem(LOCAL_STORAGE_DATA_KEY);
   let finalData = local ? { ...defaultData, ...JSON.parse(local) } : defaultData;
 
@@ -130,10 +115,8 @@ export const getUserData = async (user: User | null): Promise<UserData> => {
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         finalData = { ...finalData, ...docSnap.data() } as UserData;
-        // Sync local with cloud
         localStorage.setItem(LOCAL_STORAGE_DATA_KEY, JSON.stringify(finalData));
       } else {
-        // First time login - upload local data to cloud
         await setDoc(docRef, finalData);
       }
     } catch (e) {
