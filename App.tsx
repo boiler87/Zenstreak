@@ -47,7 +47,7 @@ import { getMotivation } from './services/geminiService';
 import type { User } from 'firebase/auth';
 
 // --- Constants ---
-const APP_VERSION = "1.6.2";
+const APP_VERSION = "1.8.0";
 const MILLIS_PER_DAY = 1000 * 60 * 60 * 24;
 
 const calculateDays = (start: number): number => {

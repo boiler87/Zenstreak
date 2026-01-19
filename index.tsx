@@ -2,17 +2,36 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 
-// --- CRITICAL CACHE CLEARING (IMMEDIATE) ---
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(function(registrations) {
-    for(let registration of registrations) {
-      console.log('Unregistering SW:', registration);
-      registration.unregister();
+// --- AGGRESSIVE CLEANUP ROUTINE ---
+// This runs on every load to ensure no stale Service Workers or Caches persist.
+const cleanUp = async () => {
+  if ('serviceWorker' in navigator) {
+    try {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      for(let registration of registrations) {
+        console.log('Unregistering found SW:', registration);
+        await registration.unregister();
+      }
+    } catch (e) {
+      console.warn('SW Cleanup failed:', e);
     }
-  }).catch(function(error) {
-    console.warn('Service Worker cleanup skipped:', error);
-  });
-}
+  }
+  
+  if ('caches' in window) {
+    try {
+      const keys = await caches.keys();
+      for(const key of keys) {
+        console.log('Deleting cache storage:', key);
+        await caches.delete(key);
+      }
+    } catch (e) {
+      console.warn('Cache Storage cleanup failed:', e);
+    }
+  }
+};
+
+// Execute cleanup immediately
+cleanUp();
 
 // Global Error Handler for API keys
 window.addEventListener('unhandledrejection', (event) => {
@@ -21,7 +40,7 @@ window.addEventListener('unhandledrejection', (event) => {
   }
 });
 
-console.log("%c Streaker v1.6.1 ", "background: #0d9488; color: #ffffff; font-weight: bold; padding: 4px;");
+console.log("%c Streaker v1.7.0 ", "background: #0d9488; color: #ffffff; font-weight: bold; padding: 4px;");
 
 const rootElement = document.getElementById('root');
 if (!rootElement) throw new Error("Root not found");
