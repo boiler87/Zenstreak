@@ -1,26 +1,20 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 import { SOURCE_MATERIAL } from "./knowledgeBase";
+import { StreakHistoryItem, ForecastResponse } from "../types";
 
-let ai: GoogleGenAI | null = null;
-
-// Safe check for process.env in case of strict browser environments
-const apiKey = (typeof process !== 'undefined' && process.env) ? process.env.API_KEY : null;
-
-if (apiKey) {
-  console.log("Gemini API Key detected.");
-  ai = new GoogleGenAI({ apiKey });
-} else {
-  console.warn("Gemini API Key missing in process.env.API_KEY");
-}
-
+/**
+ * Generates motivation using the Gemini API based on the user's current streak and goal.
+ */
 export const getMotivation = async (days: number, goal: number): Promise<string> => {
-  if (!ai) {
-    return "Cum denial is power.";
+  if (!process.env.API_KEY) {
+    console.warn("Gemini API Key is missing. AI features disabled.");
+    return "Cum denial is power. (AI Unavailable)";
   }
 
   try {
-    // Tailor context based on streak length (Phases of Denial)
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
     let context = "";
     if (days <= 3) {
       context = "Phase: Default/Voluntary. The user may still be used to the 'ejaculatory imperative'. Encourage them that the goal of stroking is NOT to cum.";
@@ -64,8 +58,12 @@ export const getMotivation = async (days: number, goal: number): Promise<string>
         responseSchema: {
           type: Type.OBJECT,
           properties: {
-            message: { type: Type.STRING }
-          }
+            message: {
+              type: Type.STRING,
+              description: 'The generated motivation sentence.',
+            }
+          },
+          propertyOrdering: ["message"]
         }
       }
     });
@@ -73,10 +71,83 @@ export const getMotivation = async (days: number, goal: number): Promise<string>
     const jsonText = response.text;
     if (!jsonText) return "Deny the release to intensify the power.";
     
-    const data = JSON.parse(jsonText);
+    const data = JSON.parse(jsonText.trim());
     return data.message || "The goal is not to cum, but to ride the edge.";
   } catch (error) {
     console.error("Gemini API Error:", error);
     return "Keep the energy high, deny the release.";
+  }
+};
+
+/**
+ * Predicts streak success and provides pattern analysis.
+ */
+export const getStreakForecast = async (history: StreakHistoryItem[], currentDays: number, goal: number): Promise<ForecastResponse> => {
+  const defaultResponse: ForecastResponse = {
+    prediction: "Maintain your discipline to reach the goal.",
+    confidenceLevel: "Medium",
+    insight: "Consistency creates the rewiring."
+  };
+
+  if (!process.env.API_KEY) return defaultResponse;
+
+  try {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    
+    // Calculate Stats
+    const totalEntries = history.length;
+    const totalDays = history.reduce((acc, curr) => acc + curr.days, 0);
+    const avgStreak = totalEntries > 0 ? (totalDays / totalEntries).toFixed(1) : "0";
+    const maxStreak = Math.max(...history.map(h => h.days), 0);
+    // Sort desc by date
+    const sortedHistory = [...history].sort((a,b) => b.endDate - a.endDate);
+    const last3 = sortedHistory.slice(0, 3).map(h => `${h.days} days`).join(", ");
+
+    const prompt = `
+      You are a data-driven coach specializing in 'extended cum denial'. Analyze the user's performance.
+
+      Current Context:
+      - Current Streak: ${currentDays} days
+      - Target Goal: ${goal} days
+      - Personal Best: ${maxStreak} days
+      - Average Streak: ${avgStreak} days
+      - Recent Performance (Last 3): ${last3 || "None"}
+
+      Task: Provide a structured forecast.
+      
+      Guidelines:
+      - 'prediction': A direct statement (max 15 words) on whether they will hit their goal based on momentum.
+      - 'confidenceLevel': 'High', 'Medium', or 'Low' based on past consistency vs current goal.
+      - 'insight': A specific pattern recognition or tactical advice (max 15 words) derived from the data.
+      - Tone: Clinical, intense, encouraging but realistic.
+    `;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: prompt,
+      config: {
+        thinkingConfig: { thinkingBudget: 0 },
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            prediction: { type: Type.STRING },
+            confidenceLevel: { type: Type.STRING, enum: ["High", "Medium", "Low"] },
+            insight: { type: Type.STRING }
+          },
+          required: ["prediction", "confidenceLevel", "insight"],
+          propertyOrdering: ["prediction", "confidenceLevel", "insight"]
+        }
+      }
+    });
+
+    const jsonText = response.text;
+    if (!jsonText) return defaultResponse;
+
+    const data = JSON.parse(jsonText.trim()) as ForecastResponse;
+    return data;
+  } catch (error) {
+    console.error("Gemini Forecast Error:", error);
+    return defaultResponse;
   }
 };

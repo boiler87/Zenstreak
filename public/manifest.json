@@ -1,0 +1,23 @@
+{
+  "short_name": "Streaker",
+  "name": "Streaker Tracker",
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/boiler87/Zenstreak/main/icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://raw.githubusercontent.com/boiler87/Zenstreak/main/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#0d9488",
+  "background_color": "#fcfcfc",
+  "orientation": "portrait"
+}

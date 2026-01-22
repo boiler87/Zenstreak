@@ -19,3 +19,9 @@ export interface MotivationResponse {
   message: string;
   author?: string;
 }
+
+export interface ForecastResponse {
+  prediction: string;
+  confidenceLevel: 'High' | 'Medium' | 'Low';
+  insight: string;
+}

@@ -1,24 +1,31 @@
-import { initializeApp, getApps, getApp, deleteApp, FirebaseApp } from 'firebase/app';
+import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { 
   getFirestore, 
   doc, 
   setDoc, 
-  getDoc, 
+  getDoc,
   Firestore
 } from 'firebase/firestore';
-import { 
-  getAuth, 
-  GoogleAuthProvider, 
-  signInWithPopup, 
-  signOut, 
+import * as firebaseAuth from 'firebase/auth';
+import { UserData } from '../types';
+
+// Workaround for missing type definitions/exports in the current environment
+const authModule = firebaseAuth as any;
+const {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut,
   onAuthStateChanged,
   setPersistence,
   browserLocalPersistence
-} from 'firebase/auth';
-import type { User, Auth } from 'firebase/auth';
-import { UserData } from '../types';
+} = authModule;
 
-// Explicit configuration - this will be used regardless of environment
+// Define types as any to bypass "Module has no exported member" errors
+export type Auth = any;
+export type User = any;
+
+// Configuration
 const firebaseConfig = {
   apiKey: "AIzaSyDygmVHR9CQaC-00NZHFcWxQh1Gw6-N0eg",
   authDomain: "gen-lang-client-0839635573.firebaseapp.com",
@@ -28,74 +35,84 @@ const firebaseConfig = {
   appId: "1:216942724738:web:27a67f70516624fc4a969b"
 };
 
-let app: FirebaseApp | undefined;
-let auth: Auth | undefined;
-let db: Firestore | undefined;
-let isFirebaseInitialized = false;
-
-// Debug: Log the key being used (partial)
-console.log("Initializing Firebase with Key ending in:", firebaseConfig.apiKey.slice(-4));
-// Debug: Log the hostname to help with authorized domain issues
-console.log("Current Hostname (Add this to Firebase Console > Auth > Settings > Authorized Domains):", window.location.hostname);
+// Singleton Initialization
+let app: FirebaseApp;
+let auth: Auth;
+let db: Firestore;
 
 try {
-  const APP_NAME = 'streaker-client-app';
-  
-  // Check if our specific app is already initialized
-  const existingApp = getApps().find(a => a.name === APP_NAME);
-  
-  if (existingApp) {
-    app = existingApp;
+  // Check if firebase is already initialized to prevent multiple instances
+  if (getApps().length === 0) {
+    app = initializeApp(firebaseConfig);
   } else {
-    app = initializeApp(firebaseConfig, APP_NAME);
+    app = getApp();
   }
-
-  // Initialize Auth with persistence
-  auth = getAuth(app);
   
-  // Ensure persistence is set to local
-  setPersistence(auth, browserLocalPersistence).catch(err => 
-    console.error("Persistence setup failed:", err)
-  );
-
+  auth = getAuth(app);
   db = getFirestore(app);
-  isFirebaseInitialized = true;
+  
+  // Set persistence immediately
+  setPersistence(auth, browserLocalPersistence).catch((error: any) => {
+    console.warn("Firebase Auth Persistence Warning:", error);
+  });
+  
+  console.log("Firebase Initialized Successfully");
 } catch (error) {
-  console.error("Firebase initialization critical error:", error);
+  console.error("CRITICAL: Firebase Initialization Failed", error);
+  throw error; // Re-throw to be caught by global handlers if necessary
 }
 
 const LOCAL_STORAGE_DATA_KEY = 'zenstreak_data';
 
-export const signInWithGoogle = async (): Promise<void> => {
-  if (!auth) {
-    throw new Error("Firebase Auth not initialized");
-  }
+// --- Auth Services ---
+
+export const signInWithGoogle = async (): Promise<User> => {
+  if (!auth) throw new Error("Authentication service is not initialized.");
+
   const provider = new GoogleAuthProvider();
-  // Force account selection to avoid auto-login issues
-  provider.setCustomParameters({
-    prompt: 'select_account'
-  });
-  
+  // Forces account selection to prevent auto-login to wrong account
+  provider.setCustomParameters({ prompt: 'select_account' });
+
   try {
-    await signInWithPopup(auth, provider);
-  } catch (error) {
-    console.error("Sign in failed", error);
+    const result = await signInWithPopup(auth, provider);
+    return result.user;
+  } catch (error: any) {
+    console.error("Google Sign-In Error:", error);
+    
+    // Transform error codes into user-friendly messages
+    if (error.code === 'auth/popup-blocked') {
+      throw new Error("Popup blocked. Please allow popups for this site.");
+    } else if (error.code === 'auth/popup-closed-by-user') {
+      throw new Error("Login cancelled by user.");
+    } else if (error.code === 'auth/network-request-failed') {
+      throw new Error("Network error. Please check your internet connection.");
+    }
+    
     throw error;
   }
 };
 
-export const logout = async () => {
-  if (auth) await signOut(auth);
+export const logout = async (): Promise<void> => {
+  if (!auth) return;
+  try {
+    await signOut(auth);
+    // Clear local cache on logout to prevent data leaks
+    localStorage.removeItem(LOCAL_STORAGE_DATA_KEY);
+  } catch (error) {
+    console.error("Logout Error:", error);
+  }
 };
 
-export const subscribeToAuth = (callback: (user: User | null) => void) => {
+export const subscribeToAuth = (callback: (user: User | null) => void): (() => void) => {
   if (!auth) {
+    console.warn("Auth not initialized, returning null user immediately.");
     callback(null);
     return () => {};
   }
-
   return onAuthStateChanged(auth, callback);
 };
+
+// --- Data Services ---
 
 export const getUserData = async (user: User | null): Promise<UserData> => {
   const defaultData: UserData = {
@@ -106,21 +123,32 @@ export const getUserData = async (user: User | null): Promise<UserData> => {
     totalEvents: 0
   };
 
-  const local = localStorage.getItem(LOCAL_STORAGE_DATA_KEY);
-  let finalData = local ? { ...defaultData, ...JSON.parse(local) } : defaultData;
+  // 1. Load from LocalStorage (Fastest)
+  const localString = localStorage.getItem(LOCAL_STORAGE_DATA_KEY);
+  let finalData: UserData = localString ? { ...defaultData, ...JSON.parse(localString) } : defaultData;
 
+  // 2. If User is logged in, sync with Cloud (Source of Truth)
   if (user && db) {
     try {
       const docRef = doc(db, 'users', user.uid);
       const docSnap = await getDoc(docRef);
+
       if (docSnap.exists()) {
-        finalData = { ...finalData, ...docSnap.data() } as UserData;
+        const cloudData = docSnap.data() as UserData;
+        
+        // Basic conflict resolution: Cloud wins if it exists, but we merge to be safe
+        // You might want more complex resolution logic here (e.g., timestamps)
+        finalData = { ...finalData, ...cloudData };
+        
+        // Update local storage to match cloud
         localStorage.setItem(LOCAL_STORAGE_DATA_KEY, JSON.stringify(finalData));
       } else {
+        // First time user in cloud? Create their doc with current local data
         await setDoc(docRef, finalData);
       }
-    } catch (e) {
-      console.error("Error fetching remote data", e);
+    } catch (error) {
+      console.error("Firestore Read Error:", error);
+      // Fallback to local data is automatic since finalData is already set
     }
   }
 
@@ -128,16 +156,24 @@ export const getUserData = async (user: User | null): Promise<UserData> => {
 };
 
 export const saveUserData = async (user: User | null, data: UserData): Promise<void> => {
-  localStorage.setItem(LOCAL_STORAGE_DATA_KEY, JSON.stringify(data));
+  // 1. Save Local (Optimistic UI)
+  try {
+    localStorage.setItem(LOCAL_STORAGE_DATA_KEY, JSON.stringify(data));
+  } catch (e) {
+    console.error("LocalStorage Write Error:", e);
+  }
 
+  // 2. Sync to Cloud if logged in
   if (user && db) {
     try {
       const docRef = doc(db, 'users', user.uid);
+      // Use merge: true to avoid overwriting fields we might not know about
       await setDoc(docRef, data, { merge: true });
-    } catch (e) {
-      console.error("Error saving to cloud", e);
+    } catch (error) {
+      console.error("Firestore Write Error:", error);
+      // Data is saved locally, so we don't throw blocking error to UI
     }
   }
 };
 
-export { isFirebaseInitialized };
+export { auth, db };

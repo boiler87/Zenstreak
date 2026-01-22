@@ -2,18 +2,22 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="version" content="1.8.0" />
+    <meta name="version" content="3.4.4" />
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     
     <!-- PWA Settings -->
-    <meta name="theme-color" content="#0d9488" />
+    <meta name="theme-color" content="#ffffff" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Streaker" />
-    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Icons and Manifest -->
+    <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/boiler87/Zenstreak/main/icon.png" />
+    <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/boiler87/Zenstreak/main/icon.png" />
+    <link rel="manifest" href="manifest.json" />
 
     <title>Streaker</title>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -24,7 +28,7 @@
             colors: {
               background: '#fcfcfc',
               surface: '#ffffff',
-              primary: '#0d9488',
+              primary: '#d4af37', 
               secondary: '#94a3b8',
               danger: '#ef4444',
               text: '#0f172a',
@@ -49,19 +53,22 @@
     <style>
       body { background-color: #fcfcfc; color: #0f172a; font-family: 'Inter', sans-serif; overscroll-behavior-y: contain; -webkit-tap-highlight-color: transparent; }
       .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+      /* Recharts fix for mobile responsiveness in absolute containers */
+      .recharts-responsive-container { min-width: 0; }
     </style>
   <script type="importmap">
 {
   "imports": {
-    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "react": "https://esm.sh/react@^19.2.3",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "@google/genai": "https://esm.sh/@google/genai@^1.35.0",
-    "recharts": "https://esm.sh/recharts@^3.6.0",
-    "firebase/": "https://esm.sh/firebase@^12.8.0/",
+    "react": "https://esm.sh/react@18.2.0",
+    "react/": "https://esm.sh/react@18.2.0/",
+    "react-dom": "https://esm.sh/react-dom@18.2.0",
+    "react-dom/": "https://esm.sh/react-dom@18.2.0/",
+    "@google/genai": "https://esm.sh/@google/genai@1.37.0",
+    "lucide-react": "https://esm.sh/lucide-react@0.344.0?external=react",
+    "recharts": "https://esm.sh/recharts@2.12.0?external=react,react-dom",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
     "vite": "https://esm.sh/vite@^7.3.1",
-    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2"
+    "firebase/": "https://esm.sh/firebase@^12.8.0/"
   }
 }
 </script>
