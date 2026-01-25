@@ -2,17 +2,32 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { SOURCE_MATERIAL } from "./knowledgeBase";
 import { StreakHistoryItem, ForecastResponse } from "../types";
 
+// Fallback API Key (from Firebase config) to ensure functionality if build env vars fail
+const FALLBACK_KEY = "AIzaSyDygmVHR9CQaC-00NZHFcWxQh1Gw6-N0eg";
+
+const getApiKey = (): string => {
+  // process.env.API_KEY is replaced by Vite at build time.
+  // If it's empty string or undefined, use the fallback.
+  const key = process.env.API_KEY;
+  if (key && key.length > 0 && key !== 'undefined') {
+    return key;
+  }
+  return FALLBACK_KEY;
+};
+
 /**
  * Generates motivation using the Gemini API based on the user's current streak and goal.
  */
 export const getMotivation = async (days: number, goal: number): Promise<string> => {
-  if (!process.env.API_KEY) {
+  const apiKey = getApiKey();
+
+  if (!apiKey) {
     console.warn("Gemini API Key is missing. AI features disabled.");
     return "Cum denial is power. (AI Unavailable)";
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey });
 
     // Determine phase based on Source Material definitions
     let context = "";
@@ -112,10 +127,11 @@ export const getStreakForecast = async (history: StreakHistoryItem[], currentDay
     insight: "Consistency creates the rewiring."
   };
 
-  if (!process.env.API_KEY) return defaultResponse;
+  const apiKey = getApiKey();
+  if (!apiKey) return defaultResponse;
 
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey });
     
     const totalEntries = history.length;
     const totalDays = history.reduce((acc, curr) => acc + curr.days, 0);

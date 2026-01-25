@@ -57,7 +57,7 @@ import { getMotivation, getStreakForecast } from './services/geminiService';
 type User = any;
 
 // --- Constants ---
-const APP_VERSION = "3.4.11";
+const APP_VERSION = "3.4.12";
 const MILLIS_PER_DAY = 1000 * 60 * 60 * 24;
 const LOGO_URL = "https://raw.githubusercontent.com/boiler87/Zenstreak/main/icon.png";
 
