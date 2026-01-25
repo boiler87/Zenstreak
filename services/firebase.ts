@@ -86,6 +86,8 @@ export const signInWithGoogle = async (): Promise<User> => {
       throw new Error("Login cancelled by user.");
     } else if (error.code === 'auth/network-request-failed') {
       throw new Error("Network error. Please check your internet connection.");
+    } else if (error.code === 'auth/unauthorized-domain') {
+      throw new Error(`Domain not authorized. Add "${window.location.hostname}" to Firebase Console > Authentication > Settings > Authorized Domains.`);
     }
     
     throw error;

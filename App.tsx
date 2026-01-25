@@ -57,7 +57,7 @@ import { getMotivation, getStreakForecast } from './services/geminiService';
 type User = any;
 
 // --- Constants ---
-const APP_VERSION = "3.4.9";
+const APP_VERSION = "3.4.11";
 const MILLIS_PER_DAY = 1000 * 60 * 60 * 24;
 const LOGO_URL = "https://raw.githubusercontent.com/boiler87/Zenstreak/main/icon.png";
 
@@ -682,57 +682,73 @@ export default function App() {
                </div>
             </div>
 
-            <div className="bg-surface border border-slate-200 rounded-3xl p-6 shadow-sm overflow-hidden">
-                <div className="flex justify-between items-start mb-4">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                    <TrendingUp size={14} className="text-primary" /> Forecast
-                  </span>
-                  {forecast && !loadingForecast && (
-                     <div className={`text-[9px] font-black px-2 py-1 rounded-lg border uppercase tracking-widest ${getConfidenceColor(forecast.confidenceLevel)}`}>
-                        {forecast.confidenceLevel} Confidence
+            {/* Combined AI Guidance Card */}
+            <div className="bg-surface border border-slate-200 rounded-3xl p-6 shadow-sm relative overflow-hidden">
+               <div className="flex justify-between items-start mb-6">
+                 <div className="flex items-center gap-2">
+                   <Sparkles size={16} className="text-primary" />
+                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">AI Guidance</span>
+                 </div>
+                 
+                 <div className="flex items-center gap-2">
+                   {forecast && !loadingForecast && (
+                      <div className={`text-[8px] font-black px-2 py-1 rounded-lg border uppercase tracking-widest ${getConfidenceColor(forecast.confidenceLevel)}`}>
+                         {forecast.confidenceLevel} Confidence
+                      </div>
+                   )}
+                   <button 
+                     onClick={handleFetchInsights} 
+                     disabled={loadingMotivation || loadingForecast} 
+                     className="text-slate-300 hover:text-primary p-1 transition-colors"
+                   >
+                     <RefreshCw size={14} className={loadingMotivation || loadingForecast ? "animate-spin" : ""} />
+                   </button>
+                 </div>
+               </div>
+
+               {/* Motivation */}
+               <div className="mb-6 relative z-10">
+                 <p className="text-lg font-bold text-text leading-snug italic">
+                   {loadingMotivation ? (
+                      <span className="flex items-center gap-2 text-slate-300 text-sm"><Loader2 size={14} className="animate-spin" /> Consulting the oracle...</span>
+                   ) : (
+                      `"${motivation}"`
+                   )}
+                 </p>
+               </div>
+
+               {/* Divider */}
+               <div className="w-full h-px bg-slate-100 mb-4"></div>
+
+               {/* Forecast */}
+               <div className="flex flex-col gap-3">
+                   <div className="flex items-center gap-2 mb-1">
+                     <TrendingUp size={12} className="text-secondary" />
+                     <span className="text-[9px] font-black text-secondary uppercase tracking-widest">Trajectory</span>
+                   </div>
+                   
+                   {loadingForecast ? (
+                     <div className="flex items-center gap-2 text-slate-300 text-xs font-bold">
+                       <Loader2 size={12} className="animate-spin" /> Analyzing patterns...
                      </div>
-                  )}
-                </div>
-                
-                <div className="flex flex-col gap-3">
-                  {loadingForecast ? (
-                    <div className="flex items-center gap-2 text-slate-300 text-sm font-bold py-2">
-                      <Loader2 size={14} className="animate-spin" /> Analyzing trajectory...
-                    </div>
-                  ) : (
-                    <>
-                      <p className="text-sm font-bold text-text leading-relaxed">
-                        {forecast?.prediction || "Maintain the edge to reach your potential."}
-                      </p>
-                      
-                      {forecast?.insight && (
-                         <div className="bg-slate-50 rounded-xl p-3 flex gap-3 items-start border border-slate-100">
-                            <Lightbulb size={16} className="text-amber-500 shrink-0 mt-0.5" />
-                            <p className="text-xs font-medium text-slate-600 italic">
-                               "{forecast.insight}"
-                            </p>
-                         </div>
-                      )}
-                    </>
-                  )}
-                </div>
+                   ) : (
+                     <>
+                       <p className="text-sm font-semibold text-slate-700 leading-relaxed">
+                         {forecast?.prediction || "Maintain discipline to reach your goal."}
+                       </p>
+                       
+                       {forecast?.insight && (
+                          <div className="bg-slate-50 rounded-xl p-3 flex gap-3 items-start border border-slate-100 mt-1">
+                             <Lightbulb size={14} className="text-amber-500 shrink-0 mt-0.5" />
+                             <p className="text-xs font-medium text-slate-500">
+                                {forecast.insight}
+                             </p>
+                          </div>
+                       )}
+                     </>
+                   )}
+               </div>
             </div>
-            
-            <div className="bg-gradient-to-br from-teal-50 to-emerald-50 border border-teal-100 rounded-3xl p-6 shadow-sm relative overflow-hidden min-h-[100px] flex flex-col">
-                 <div className="absolute top-0 right-0 p-4 opacity-5">
-                    <Sparkles size={80} className="text-primary" />
-                 </div>
-                 <div className="flex justify-between items-start mb-3 relative z-10">
-                    <span className="text-[10px] font-black text-primary uppercase tracking-widest flex items-center gap-2"><Zap size={14} fill="currentColor" /> Insight</span>
-                    <button onClick={handleFetchInsights} disabled={loadingMotivation} className="text-teal-400 hover:text-primary"><RefreshCw size={14} className={loadingMotivation ? "animate-spin" : ""} /></button>
-                 </div>
-                 <div className="relative z-10 flex-1 flex items-center">
-                    <p className="text-sm text-teal-900 font-bold leading-relaxed italic">
-                      {loadingMotivation ? "Consulting the oracle..." : `"${motivation}"`}
-                    </p>
-                 </div>
-              </div>
-            
           </div>
         )}
 
