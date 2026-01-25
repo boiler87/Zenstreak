@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { SOURCE_MATERIAL } from "./knowledgeBase";
 import { StreakHistoryItem, ForecastResponse } from "../types";
@@ -15,38 +14,60 @@ export const getMotivation = async (days: number, goal: number): Promise<string>
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
+    // Determine phase based on Source Material definitions
     let context = "";
     if (days <= 3) {
-      context = "Phase: Default/Voluntary. The user may still be used to the 'ejaculatory imperative'. Encourage them that the goal of stroking is NOT to cum.";
+      context = "Phase: Default/Voluntary. The user is just starting. The goal is NOT to cum.";
     } else if (days <= 14) {
-      context = "Phase: Optional/Experimentation. The user is feeling the intense horniness and 'chaser effect'. Frame this frustration as 'intensity' and 'power' to be enjoyed, not fixed.";
+      context = "Phase: Optional. The user feels the intense horniness. Frame this as 'intensity' to be enjoyed.";
     } else if (days <= 30) {
-      context = "Phase: Exclusionary. The user is actively excluding orgasm to build energy. Remind them that the 'brake and gas pedal' are both mashed to the floor.";
+      context = "Phase: Exclusionary. Actively excluding orgasm. 'Brake and gas pedal both mashed to the floor'.";
     } else {
-      context = "Phase: Transcendent. The user is rewiring their mind. Orgasm is no longer the goal; the state of high charge is the goal.";
+      context = "Phase: Transcendent. Orgasm is no longer the goal. The state of high charge is the goal.";
     }
 
-    const prompt = `
-      You are a mentor in the practice of 'Extreme Edging' and 'Extended Cum Denial'.
-      
-      User Stats:
-      - Days without Orgasm: ${days}
-      - Goal: ${goal} days
-      - Context: ${context}
+    // Dynamic Context to force variety
+    const metaphors = [
+        "building a mental fortress", 
+        "forging steel in fire", 
+        "holding back the ocean tide", 
+        "climbing a steep mountain", 
+        "accumulating massive electrical potential", 
+        "charging a high-capacity battery",
+        "taming a wild beast within", 
+        "ancient stoic endurance", 
+        "biohacking the nervous system",
+        "withstanding deep sea pressure", 
+        "orbital mechanics and gravity", 
+        "containing volcanic pressure",
+        "tuning a high-performance engine",
+        "sharpening a blade to a razor edge",
+        "pulling back a heavy bowstring"
+    ];
+    const randomMetaphor = metaphors[Math.floor(Math.random() * metaphors.length)];
 
-      REFERENCE MATERIAL (Use this specific philosophy):
+    const prompt = `
+      You are the author of the REFERENCE MATERIAL below. You are intense, direct, and obsessed with the power of 'Extended Cum Denial'.
+      
+      REFERENCE MATERIAL (Your Philosophy):
       """
       ${SOURCE_MATERIAL}
       """
 
-      Task: Generate a SINGLE, powerful, short sentence of motivation. 
-      
-      Guidelines:
-      - Use the specific philosophy from the Reference Material (Cum Denial is Power, Intensifying the Cock, The Zone).
-      - Do NOT be puritanical or advocate for 'monk-like' celibacy. 
-      - Advocate for *active* sexual energy and intensity, but *denying* the release.
-      - Contrast 'The Pain of Discipline' with the 'Pleasure of Intensity'.
-      - Refer to the urge to cum as a demand to be overruled for greater power.
+      SITUATION:
+      - User Streak: ${days} days
+      - Goal: ${goal} days
+      - Phase: ${context}
+      - Metaphor to use: ${randomMetaphor}
+
+      TASK:
+      Generate a SINGLE, powerful, short sentence of motivation (max 20 words).
+
+      STRICT GUIDELINES:
+      1. USE YOUR VOICE: Speak like the author of the text. Use terms like "intensity", "power", "lustful", "voltage", "The Zone", "rewiring". 
+      2. REJECT GENERIC ADVICE: Do not sound like a generic life coach. Do not say "you can do it".
+      3. PHILOSOPHY: Remind the user that the urge to cum is a demand to be overruled for greater power. 
+      4. METAPHOR: Weave the assigned metaphor (${randomMetaphor}) into the author's specific philosophy of 'intensity over release'.
     `;
 
     const response = await ai.models.generateContent({
@@ -54,6 +75,8 @@ export const getMotivation = async (days: number, goal: number): Promise<string>
       contents: prompt,
       config: {
         thinkingConfig: { thinkingBudget: 0 },
+        temperature: 1.3, // Very High creativity to mix the specific philosophy with random metaphors
+        topP: 0.95,
         responseMimeType: 'application/json',
         responseSchema: {
           type: Type.OBJECT,
@@ -94,32 +117,34 @@ export const getStreakForecast = async (history: StreakHistoryItem[], currentDay
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
-    // Calculate Stats
     const totalEntries = history.length;
     const totalDays = history.reduce((acc, curr) => acc + curr.days, 0);
     const avgStreak = totalEntries > 0 ? (totalDays / totalEntries).toFixed(1) : "0";
     const maxStreak = Math.max(...history.map(h => h.days), 0);
-    // Sort desc by date
     const sortedHistory = [...history].sort((a,b) => b.endDate - a.endDate);
     const last3 = sortedHistory.slice(0, 3).map(h => `${h.days} days`).join(", ");
 
     const prompt = `
-      You are a data-driven coach specializing in 'extended cum denial'. Analyze the user's performance.
+      You are the author of the text below. Analyze the user's data using your philosophy.
 
-      Current Context:
+      REFERENCE MATERIAL:
+      """
+      ${SOURCE_MATERIAL}
+      """
+
+      User Data:
       - Current Streak: ${currentDays} days
-      - Target Goal: ${goal} days
-      - Personal Best: ${maxStreak} days
-      - Average Streak: ${avgStreak} days
-      - Recent Performance (Last 3): ${last3 || "None"}
+      - Goal: ${goal} days
+      - Best: ${maxStreak} days
+      - Avg: ${avgStreak} days
+      - Recent: ${last3 || "None"}
 
       Task: Provide a structured forecast.
       
       Guidelines:
-      - 'prediction': A direct statement (max 15 words) on whether they will hit their goal based on momentum.
-      - 'confidenceLevel': 'High', 'Medium', or 'Low' based on past consistency vs current goal.
-      - 'insight': A specific pattern recognition or tactical advice (max 15 words) derived from the data.
-      - Tone: Clinical, intense, encouraging but realistic.
+      - prediction: Direct statement (max 15 words).
+      - confidenceLevel: 'High', 'Medium', or 'Low'.
+      - insight: A short piece of tactical advice (max 15 words). MUST USE VOCABULARY FROM THE REFERENCE MATERIAL (e.g. "rewiring", "mashed pedals", "intensity", "muscle control", "The Zone").
     `;
 
     const response = await ai.models.generateContent({
@@ -127,6 +152,8 @@ export const getStreakForecast = async (history: StreakHistoryItem[], currentDay
       contents: prompt,
       config: {
         thinkingConfig: { thinkingBudget: 0 },
+        temperature: 1.1, 
+        topP: 0.95,
         responseMimeType: 'application/json',
         responseSchema: {
           type: Type.OBJECT,

@@ -57,7 +57,7 @@ import { getMotivation, getStreakForecast } from './services/geminiService';
 type User = any;
 
 // --- Constants ---
-const APP_VERSION = "3.4.4";
+const APP_VERSION = "3.4.8";
 const MILLIS_PER_DAY = 1000 * 60 * 60 * 24;
 const LOGO_URL = "https://raw.githubusercontent.com/boiler87/Zenstreak/main/icon.png";
 
@@ -649,7 +649,7 @@ export default function App() {
                   </button>
                </div>
 
-               <div className="grid grid-cols-3 gap-2 w-full">
+               <div className="grid grid-cols-2 gap-2 w-full">
                   <button 
                     onClick={() => setIsEditingGoal(true)}
                     className={`rounded-2xl p-3 flex flex-col items-center justify-center border transition-all duration-200 ${isEditingGoal ? 'bg-primary/5 border-primary' : 'bg-slate-50 border-slate-100'}`}
@@ -663,6 +663,12 @@ export default function App() {
                      <Flame size={18} className="text-orange-500 mb-1" />
                      <span className="text-lg font-black text-text">{longestStreak}</span>
                      <span className="text-[8px] font-black text-secondary uppercase tracking-widest">Best</span>
+                  </div>
+
+                  <div className="bg-slate-50 rounded-2xl p-3 flex flex-col items-center justify-center border border-slate-100">
+                     <BarChart3 size={18} className="text-indigo-500 mb-1" />
+                     <span className="text-lg font-black text-text">{stats.avgStreak}</span>
+                     <span className="text-[8px] font-black text-secondary uppercase tracking-widest">Average</span>
                   </div>
 
                   <button 
