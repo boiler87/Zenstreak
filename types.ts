@@ -11,6 +11,7 @@ export interface UserData {
   goal: number; // Target days
   history: StreakHistoryItem[];
   uid?: string;
+  username?: string; // New field for user personalization
   showMotivation?: boolean;
   totalEvents?: number; // Lifetime count of events
 }

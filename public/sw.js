@@ -1,4 +1,4 @@
-const CACHE_NAME = 'streaker-v3.4.14';
+const CACHE_NAME = 'streaker-v3.4.18';
 const urlsToCache = [
   'index.html',
   'manifest.json'

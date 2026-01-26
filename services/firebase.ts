@@ -1,3 +1,4 @@
+
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { 
   getFirestore, 
@@ -122,7 +123,8 @@ export const getUserData = async (user: User | null): Promise<UserData> => {
     goal: 30,
     history: [],
     showMotivation: true,
-    totalEvents: 0
+    totalEvents: 0,
+    username: ''
   };
 
   // 1. Load from LocalStorage (Fastest)

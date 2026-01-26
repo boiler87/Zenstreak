@@ -12,26 +12,32 @@ import {
   LogIn, 
   LogOut, 
   User as UserIcon,
-  AlertCircle,
-  Loader2,
-  Shield,
-  X,
-  ArrowUpNarrowWide,
-  ArrowDownWideNarrow,
-  Plus,
-  TrendingUp,
-  Milestone,
-  BarChart3,
-  List as ListIcon,
-  Trash2,
-  Pencil,
-  Lightbulb,
-  Download,
-  Share,
-  PlusSquare,
-  Image as ImageIcon,
-  ChevronLeft,
-  ChevronRight
+  AlertCircle, 
+  Loader2, 
+  Shield, 
+  X, 
+  ArrowUpNarrowWide, 
+  ArrowDownWideNarrow, 
+  Plus, 
+  TrendingUp, 
+  Milestone, 
+  BarChart3, 
+  List as ListIcon, 
+  Trash2, 
+  Pencil, 
+  Lightbulb, 
+  Download, 
+  Share, 
+  PlusSquare, 
+  Image as ImageIcon, 
+  ChevronLeft, 
+  ChevronRight,
+  Smile,
+  Battery,
+  BatteryCharging,
+  BatteryFull,
+  Cpu,
+  Info
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -57,13 +63,23 @@ import { getMotivation, getStreakForecast } from './services/geminiService';
 type User = any;
 
 // --- Constants ---
-const APP_VERSION = "3.4.14";
+const APP_VERSION = "3.4.18";
 const MILLIS_PER_DAY = 1000 * 60 * 60 * 24;
+
+// --- Gamification Data Structures ---
+const RANK_METADATA = [
+  { level: 1, name: "Static", factor: 0, color: "#94a3b8", glow: "rgba(148, 163, 184, 0.3)", icon: Battery },
+  { level: 2, name: "Kinetic", factor: 0.1, color: "#38bdf8", glow: "rgba(56, 189, 248, 0.4)", icon: BatteryCharging },
+  { level: 3, name: "Live Wire", factor: 0.25, color: "#fbbf24", glow: "rgba(251, 191, 36, 0.5)", icon: Zap },
+  { level: 4, name: "High Tension", factor: 0.45, color: "#f59e0b", glow: "rgba(245, 158, 11, 0.6)", icon: Cpu },
+  { level: 5, name: "Transformer", factor: 0.65, color: "#d97706", glow: "rgba(217, 119, 6, 0.7)", icon: Flame },
+  { level: 6, name: "Supergrid", factor: 0.85, color: "#d4af37", glow: "rgba(212, 175, 55, 0.8)", icon: Milestone },
+  { level: 7, name: "Singularity", factor: 1.0, color: "#000000", glow: "rgba(212, 175, 55, 0.9)", icon: Sparkles },
+];
 
 // SVG Logo Component based on user provided image
 const Logo = ({ className = "w-8 h-8" }: { className?: string }) => (
   <svg viewBox="0 0 512 512" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
-    {/* Infinity Symbol - Gold */}
     <path 
       d="M166 182C128.5 182 98 212.5 98 250C98 287.5 128.5 318 166 318C189.5 318 211 306 224 286L288 226C301 206 322.5 194 346 194C383.5 194 414 224.5 414 262C414 299.5 383.5 330 346 330C322.5 330 301 318 288 298L224 238C211 218 189.5 206 166 206C142.5 206 122 226.5 122 250C122 273.5 142.5 294 166 294" 
       stroke="#d4af37" 
@@ -71,7 +87,6 @@ const Logo = ({ className = "w-8 h-8" }: { className?: string }) => (
       strokeLinecap="round" 
       strokeLinejoin="round"
     />
-    {/* Text Overlay - Black, bold, centered */}
     <text 
       x="50%" 
       y="52%" 
@@ -102,54 +117,67 @@ const toLocalDateString = (timestamp: number): string => {
   return `${year}-${month}-${day}`;
 };
 
-// Fixes timezone offset issues by explicitly parsing YYYY-MM-DD to local midnight
 const parseLocalDate = (dateString: string): number => {
   const [y, m, d] = dateString.split('-').map(Number);
-  // Month is 0-indexed in JS Date
   return new Date(y, m - 1, d).getTime();
 };
 
 const LoadingSpinner = () => (
   <div className="flex flex-col gap-4 justify-center items-center h-full text-primary animate-pulse">
     <div className="w-12 h-12 border-4 border-current border-t-transparent rounded-full animate-spin"></div>
-    <span className="text-xs font-bold tracking-widest uppercase">Syncing...</span>
+    <span className="text-xs font-bold tracking-widest uppercase">Syncing Grid...</span>
   </div>
 );
 
-const StreakProgress = ({ start, goal }: { start: number; goal: number }) => {
+const StreakProgress = ({ start, goal, currentRank }: { start: number; goal: number, currentRank: any }) => {
   const days = calculateDays(start);
   const percentage = Math.min(100, Math.max(0, (days / goal) * 100));
   const radius = 90; 
-  const stroke = 10; 
+  const stroke = 12; 
   const normalizedRadius = radius - stroke * 2;
   const circumference = normalizedRadius * 2 * Math.PI;
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
   return (
     <div className="relative flex items-center justify-center select-none my-6">
-      <svg height={radius * 2} width={radius * 2} className="rotate-[-90deg] transition-all duration-1000">
+      {/* Voltage Aura Effect */}
+      <div 
+        className="absolute inset-0 rounded-full blur-3xl opacity-30 transition-all duration-1000 animate-pulse"
+        style={{ backgroundColor: currentRank.color, transform: `scale(${1 + (days / 100)})` }}
+      />
+      
+      <svg height={radius * 2} width={radius * 2} className="rotate-[-90deg] transition-all duration-1000 relative z-10">
         <defs>
-          <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#D4AF37" />
-            <stop offset="100%" stopColor="#AA8C2C" />
+          <linearGradient id="voltage-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor={currentRank.color} />
+            <stop offset="100%" stopColor="#d4af37" />
           </linearGradient>
+          <filter id="glow">
+             <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+             <feMerge>
+                 <feMergeNode in="coloredBlur"/>
+                 <feMergeNode in="SourceGraphic"/>
+             </feMerge>
+          </filter>
         </defs>
-        <circle stroke="#f1f5f9" strokeWidth={stroke} fill="transparent" r={normalizedRadius} cx={radius} cy={radius} />
+        <circle stroke="#f8fafc" strokeWidth={stroke} fill="transparent" r={normalizedRadius} cx={radius} cy={radius} />
         <circle 
-          stroke="url(#gradient)" 
+          stroke="url(#voltage-gradient)" 
           strokeWidth={stroke} 
           strokeDasharray={circumference + ' ' + circumference} 
-          style={{ strokeDashoffset }} 
+          style={{ strokeDashoffset, filter: days > 7 ? 'url(#glow)' : 'none' }} 
           strokeLinecap="round" 
           fill="transparent" 
           r={normalizedRadius} 
           cx={radius} 
           cy={radius} 
+          className="transition-all duration-1000"
         />
       </svg>
-      <div className="absolute flex flex-col items-center">
-        <span className="text-6xl font-black text-text tracking-tighter">{days}</span>
-        <span className="text-xs font-black text-secondary uppercase tracking-[0.3em] mt-1">Days</span>
+      
+      <div className="absolute flex flex-col items-center z-20">
+        <span className="text-6xl font-black text-text tracking-tighter drop-shadow-sm">{days}</span>
+        <span className="text-[10px] font-black text-secondary uppercase tracking-[0.4em] mt-1">Days</span>
       </div>
     </div>
   );
@@ -207,6 +235,9 @@ export default function App() {
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [selectedDayDetails, setSelectedDayDetails] = useState<{date: string, statuses: string[], details: string[]} | null>(null);
 
+  // Username feature state
+  const [tempUsername, setTempUsername] = useState("");
+
   useEffect(() => {
     setIsAppInstalled(isStandalone());
   }, []);
@@ -258,6 +289,7 @@ export default function App() {
         const fetched = await getUserData(user);
         setData(fetched);
         setTempGoal(fetched.goal.toString());
+        setTempUsername(fetched.username || "");
         const targetDate = new Date((fetched.currentStreakStart || Date.now()) + fetched.goal * MILLIS_PER_DAY);
         setTempGoalDate(toLocalDateString(targetDate.getTime()));
       } catch (e) {
@@ -272,6 +304,29 @@ export default function App() {
   const currentDays = useMemo(() => {
     return data && data.currentStreakStart ? calculateDays(data.currentStreakStart) : 0;
   }, [data, tick]);
+
+  // --- Dynamic Voltage Ranks Logic ---
+  const dynamicRanks = useMemo(() => {
+    const goal = data?.goal || 30;
+    return RANK_METADATA.map(rank => ({
+      ...rank,
+      minDays: Math.floor(rank.factor * goal)
+    }));
+  }, [data?.goal]);
+
+  const currentVoltage = useMemo(() => {
+    return [...dynamicRanks].reverse().find(rank => currentDays >= rank.minDays) || dynamicRanks[0];
+  }, [dynamicRanks, currentDays]);
+
+  const nextVoltage = useMemo(() => {
+    return dynamicRanks.find(rank => currentDays < rank.minDays) || null;
+  }, [dynamicRanks, currentDays]);
+  
+  const powerLevel = useMemo(() => {
+    if (!data) return 0;
+    const totalLifetimeDays = data.history.reduce((sum, h) => sum + h.days, 0) + currentDays;
+    return (currentDays * 10) + Math.floor(totalLifetimeDays / 2);
+  }, [data, currentDays]);
 
   const handleFetchInsights = useCallback(async () => {
     if (!data) return;
@@ -383,6 +438,13 @@ export default function App() {
     setData(newData);
     await saveUserData(user, newData);
     setIsEditingGoal(false);
+  };
+
+  const handleUsernameSubmit = async () => {
+    if (!data) return;
+    const newData = { ...data, username: tempUsername };
+    setData(newData);
+    await saveUserData(user, newData);
   };
 
   const handleManualHistorySubmit = async () => {
@@ -537,6 +599,11 @@ export default function App() {
     <div className="min-h-screen bg-background text-text font-sans pb-32">
       <header className="px-6 pt-8 pb-4 flex justify-between items-start max-w-md mx-auto w-full">
         <div className="flex flex-col items-start">
+            {data?.username && (
+              <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em] animate-fade-in mb-[-12px] ml-4">
+                Welcome, {data.username}
+              </span>
+            )}
             <div className="flex items-center">
               <Logo className="w-24 h-24 -ml-4" />
             </div>
@@ -565,7 +632,7 @@ export default function App() {
                 className="flex items-center gap-2 text-[10px] font-black bg-primary text-white px-4 py-2 rounded-full shadow-md shadow-primary/20 disabled:opacity-70 transition-all hover:bg-primary/90"
               >
                 {isRedirecting ? <Loader2 size={14} className="animate-spin" /> : <LogIn size={14} />}
-                {isRedirecting ? "Syncing..." : "Sync"}
+                {isRedirecting ? "Syncing Grid..." : "Sync"}
               </button>
             )}
         </div>
@@ -576,7 +643,7 @@ export default function App() {
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-start gap-3 text-xs shadow-sm">
              <AlertCircle size={14} className="mt-0.5 shrink-0" />
              <div className="flex-1">
-                <p className="font-bold">Login Issue</p>
+                <p className="font-bold">Grid Sync Error</p>
                 <p className="mt-1 opacity-80 break-words leading-relaxed">{authError}</p>
              </div>
              <button onClick={() => setAuthError(null)} className="shrink-0 p-1 hover:bg-red-100 rounded-lg"><X size={14}/></button>
@@ -587,9 +654,36 @@ export default function App() {
       <main className="max-w-md mx-auto w-full px-6 flex flex-col gap-6">
         {view === 'dashboard' && data && (
           <div className="animate-fade-in flex flex-col gap-6">
-            <div className="bg-surface rounded-[40px] p-6 flex flex-col items-center justify-center shadow-xl shadow-slate-200/50 border border-slate-100 relative">
-               <StreakProgress start={data.currentStreakStart || Date.now()} goal={data.goal} />
-               <div className="flex flex-col items-center gap-1 mb-6 mt-[-8px]">
+            <div className="bg-surface rounded-[40px] p-6 flex flex-col items-center justify-center shadow-xl shadow-slate-200/50 border border-slate-100 relative overflow-hidden">
+               
+               <StreakProgress start={data.currentStreakStart || Date.now()} goal={data.goal} currentRank={currentVoltage} />
+
+               {/* Rank Badge Indicator & Next Rank Info - MOVED BELOW COUNTER */}
+               <div className="flex flex-col items-center gap-3 mt-2 mb-6 z-20 w-full px-4">
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-50 border border-slate-100 shadow-sm">
+                    <currentVoltage.icon size={14} style={{ color: currentVoltage.color }} className="animate-pulse" />
+                    <span className="text-[11px] font-black uppercase tracking-widest text-text">Current Rank: {currentVoltage.name}</span>
+                  </div>
+                  
+                  {nextVoltage && (
+                    <div className="flex flex-col items-center w-full max-w-[200px]">
+                       <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden mb-2">
+                          <div 
+                            className="h-full transition-all duration-1000" 
+                            style={{ 
+                              backgroundColor: currentVoltage.color, 
+                              width: `${((currentDays - currentVoltage.minDays) / (nextVoltage.minDays - currentVoltage.minDays)) * 100}%` 
+                            }} 
+                          />
+                       </div>
+                       <span className="text-[12px] font-black text-slate-500 uppercase tracking-widest text-center">
+                          {nextVoltage.minDays - currentDays} Days until {nextVoltage.name}
+                       </span>
+                    </div>
+                  )}
+               </div>
+               
+               <div className="flex flex-col items-center gap-1 mb-6">
                   <button 
                     onClick={handleStartClick}
                     className="flex items-center gap-2 px-4 py-2 bg-slate-50 rounded-full border border-slate-100 hover:bg-slate-100 transition-colors group"
@@ -603,22 +697,22 @@ export default function App() {
                   </button>
                </div>
 
-               <div className="grid grid-cols-2 gap-2 w-full">
+               <div className="grid grid-cols-2 gap-2 w-full relative z-20">
+                  <div className="bg-slate-50 rounded-2xl p-3 flex flex-col items-center justify-center border border-slate-100">
+                     <Zap size={18} className="text-primary mb-1" />
+                     <span className="text-lg font-black text-text">{powerLevel}</span>
+                     <span className="text-[8px] font-black text-secondary uppercase tracking-widest">Energy Score</span>
+                  </div>
+                  <div className="bg-slate-50 rounded-2xl p-3 flex flex-col items-center justify-center border border-slate-100">
+                     <Flame size={18} className="text-orange-500 mb-1" />
+                     <span className="text-lg font-black text-text">{longestStreak}</span>
+                     <span className="text-[8px] font-black text-secondary uppercase tracking-widest">Max Load</span>
+                  </div>
                   <button onClick={() => setIsEditingGoal(true)} className={`rounded-2xl p-3 flex flex-col items-center justify-center border transition-all duration-200 ${isEditingGoal ? 'bg-primary/5 border-primary' : 'bg-slate-50 border-slate-100'}`}>
                      <Target size={18} className="text-primary mb-1" />
                      <span className="text-lg font-black text-text">{data.goal}</span>
                      <span className="text-[8px] font-black text-secondary uppercase tracking-widest">Goal</span>
                   </button>
-                  <div className="bg-slate-50 rounded-2xl p-3 flex flex-col items-center justify-center border border-slate-100">
-                     <Flame size={18} className="text-orange-500 mb-1" />
-                     <span className="text-lg font-black text-text">{longestStreak}</span>
-                     <span className="text-[8px] font-black text-secondary uppercase tracking-widest">Best</span>
-                  </div>
-                  <div className="bg-slate-50 rounded-2xl p-3 flex flex-col items-center justify-center border border-slate-100">
-                     <BarChart3 size={18} className="text-indigo-500 mb-1" />
-                     <span className="text-lg font-black text-text">{stats.avgStreak}</span>
-                     <span className="text-[8px] font-black text-secondary uppercase tracking-widest">Average</span>
-                  </div>
                   <button onClick={() => setShowResetConfirm(true)} className="bg-slate-50 hover:bg-red-50 rounded-2xl p-3 flex flex-col items-center justify-center border border-slate-100 hover:border-red-100 transition-colors group active:scale-95">
                      <RotateCcw size={18} className="text-slate-400 group-hover:text-danger mb-1 transition-colors" />
                      <span className="text-lg font-black text-slate-300 group-hover:text-danger transition-colors">Reset</span>
@@ -631,12 +725,12 @@ export default function App() {
                <div className="flex justify-between items-start mb-6">
                  <div className="flex items-center gap-2">
                    <Sparkles size={16} className="text-primary" />
-                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">AI Guidance</span>
+                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Grid Insight</span>
                  </div>
                  <div className="flex items-center gap-2">
                    {forecast && !loadingForecast && (
                       <div className={`text-[8px] font-black px-2 py-1 rounded-lg border uppercase tracking-widest ${getConfidenceColor(forecast.confidenceLevel)}`}>
-                         {forecast.confidenceLevel} Confidence
+                         {forecast.confidenceLevel} Integrity
                       </div>
                    )}
                    <button onClick={handleFetchInsights} disabled={loadingMotivation || loadingForecast} className="text-slate-300 hover:text-primary p-1 transition-colors">
@@ -646,14 +740,14 @@ export default function App() {
                </div>
                <div className="mb-6 relative z-10">
                  <p className="text-lg font-bold text-text leading-snug italic">
-                   {loadingMotivation ? <span className="flex items-center gap-2 text-slate-300 text-sm"><Loader2 size={14} className="animate-spin" /> Consulting the oracle...</span> : `"${motivation}"`}
+                   {loadingMotivation ? <span className="flex items-center gap-2 text-slate-300 text-sm"><Loader2 size={14} className="animate-spin" /> Querying the Source...</span> : `"${motivation}"`}
                  </p>
                </div>
                <div className="w-full h-px bg-slate-100 mb-4"></div>
                <div className="flex flex-col gap-3">
                    <div className="flex items-center gap-2 mb-1">
                      <TrendingUp size={12} className="text-secondary" />
-                     <span className="text-[9px] font-black text-secondary uppercase tracking-widest">Trajectory</span>
+                     <span className="text-[9px] font-black text-secondary uppercase tracking-widest">Power Trajectory</span>
                    </div>
                    {loadingForecast ? (
                      <div className="flex items-center gap-2 text-slate-300 text-xs font-bold">
@@ -661,7 +755,7 @@ export default function App() {
                      </div>
                    ) : (
                      <>
-                       <p className="text-sm font-semibold text-slate-700 leading-relaxed">{forecast?.prediction || "Maintain discipline to reach your goal."}</p>
+                       <p className="text-sm font-semibold text-slate-700 leading-relaxed">{forecast?.prediction || "Maintain intensity to stabilize the grid."}</p>
                        {forecast?.insight && (
                           <div className="bg-slate-50 rounded-xl p-3 flex gap-3 items-start border border-slate-100 mt-1">
                              <Lightbulb size={14} className="text-amber-500 shrink-0 mt-0.5" />
@@ -718,11 +812,6 @@ export default function App() {
                        })}
                     </div>
                  </div>
-                 <div className="flex gap-4 justify-center py-2 px-4 bg-slate-50 rounded-2xl border border-slate-100">
-                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-primary/10 border border-primary/20"></div><span className="text-[9px] font-bold text-secondary uppercase">Current</span></div>
-                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-amber-100 border border-amber-200"></div><span className="text-[9px] font-bold text-secondary uppercase">Past</span></div>
-                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-gradient-to-br from-amber-200 to-emerald-200 border border-slate-300"></div><span className="text-[9px] font-bold text-secondary uppercase">Both</span></div>
-                 </div>
               </div>
             )}
 
@@ -730,17 +819,17 @@ export default function App() {
               <div className="flex flex-col gap-4 animate-fade-in">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-surface p-4 rounded-3xl border border-slate-100 shadow-sm flex flex-col gap-1"><span className="text-[9px] font-black text-secondary uppercase tracking-widest">Total Days Denied</span><span className="text-2xl font-black text-primary">{stats.totalDays}</span></div>
-                  <div className="bg-surface p-4 rounded-3xl border border-slate-100 shadow-sm flex flex-col gap-1"><span className="text-[9px] font-black text-secondary uppercase tracking-widest">Avg Streak Length</span><span className="text-2xl font-black text-text">{stats.avgStreak}</span></div>
+                  <div className="bg-surface p-4 rounded-3xl border border-slate-100 shadow-sm flex flex-col gap-1"><span className="text-[9px] font-black text-secondary uppercase tracking-widest">Avg Load Length</span><span className="text-2xl font-black text-text">{stats.avgStreak}</span></div>
                 </div>
                 <div className="bg-surface p-6 rounded-3xl border border-slate-100 shadow-sm">
-                  <h3 className="text-[10px] font-black text-secondary uppercase tracking-widest mb-6 flex items-center gap-2"><BarChart3 size={14} className="text-primary" /> Performance History</h3>
+                  <h3 className="text-[10px] font-black text-secondary uppercase tracking-widest mb-6 flex items-center gap-2"><BarChart3 size={14} className="text-primary" /> Charge History</h3>
                   <div className="h-64 w-full">
                     {chartData.length > 1 ? (
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={chartData} margin={{ top: 0, right: 0, left: -25, bottom: 0 }}>
                           <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 700, fill: '#94a3b8' }} dy={10}/>
                           <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 700, fill: '#94a3b8' }} />
-                          <Tooltip cursor={{ fill: 'rgba(13, 148, 136, 0.05)' }} content={({ active, payload }) => {
+                          <Tooltip cursor={{ fill: 'rgba(212, 175, 55, 0.05)' }} content={({ active, payload }) => {
                               if (active && payload && payload.length) {
                                 return (
                                   <div className="bg-white p-3 rounded-2xl shadow-xl border border-slate-100 text-xs font-bold">
@@ -753,11 +842,11 @@ export default function App() {
                             }}
                           />
                           <Bar dataKey="days" radius={[6, 6, 6, 6]} barSize={20}>
-                            {chartData.map((entry, index) => <Cell key={`cell-${index}`} fill={index === chartData.length - 1 ? '#0d9488' : '#e2e8f0'} className="transition-all hover:fill-primary/80"/>)}
+                            {chartData.map((entry, index) => <Cell key={`cell-${index}`} fill={index === chartData.length - 1 ? '#d4af37' : '#e2e8f0'} className="transition-all hover:fill-primary/80"/>)}
                           </Bar>
                         </BarChart>
                       </ResponsiveContainer>
-                    ) : <div className="h-full flex items-center justify-center text-slate-300 text-xs font-medium italic">Insufficient data for visualization</div>}
+                    ) : <div className="h-full flex items-center justify-center text-slate-300 text-xs font-medium italic">Insufficient history for visualization</div>}
                   </div>
                 </div>
               </div>
@@ -776,10 +865,10 @@ export default function App() {
                   </div>
                 )}
                 <div className="flex flex-col gap-3 pb-12">
-                  {data.history.length === 0 ? <div className="text-center py-10 text-slate-400 text-sm">No history yet. Keep going!</div> : sortedHistory.map((streak) => (
+                  {data.history.length === 0 ? <div className="text-center py-10 text-slate-400 text-sm italic">The energy grid is empty. Initiate a streak.</div> : sortedHistory.map((streak) => (
                       <div key={streak.id} className="bg-surface p-4 rounded-2xl border border-slate-200 flex justify-between items-center group hover:shadow-md transition-all">
                         <div className="flex flex-col">
-                          <div className="flex items-baseline gap-2"><span className="text-xl font-black text-text">{streak.days}</span><span className="text-[10px] font-black text-secondary uppercase">Days</span></div>
+                          <div className="flex items-baseline gap-2"><span className="text-xl font-black text-text">{streak.days}</span><span className="text-[10px] font-black text-secondary uppercase">Days Charged</span></div>
                           <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">{new Date(streak.startDate).toLocaleDateString()} - {new Date(streak.endDate).toLocaleDateString()}</span>
                         </div>
                         <div className="flex gap-1">
@@ -801,15 +890,71 @@ export default function App() {
 
         {view === 'settings' && data && (
           <div className="animate-fade-in flex flex-col gap-6">
-            <h2 className="text-2xl font-black text-text">Settings</h2>
+            <h2 className="text-2xl font-black text-text">Configuration</h2>
+            
+            <div className="bg-surface p-6 rounded-3xl border border-slate-200 shadow-sm">
+               <h3 className="text-[10px] font-black mb-4 text-secondary uppercase tracking-widest flex items-center gap-2">
+                 <Smile size={14} className="text-primary" /> Identity
+               </h3>
+               <div className="flex flex-col gap-2">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Callsign</label>
+                  <div className="flex gap-2">
+                    <input 
+                      type="text" 
+                      placeholder="e.g. Operator" 
+                      value={tempUsername} 
+                      onChange={(e) => setTempUsername(e.target.value)}
+                      className="flex-1 bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
+                    />
+                    <button 
+                      onClick={handleUsernameSubmit}
+                      className="bg-primary text-white px-6 py-3 rounded-2xl font-black text-xs hover:bg-primary/90 active:scale-95 transition-all"
+                    >
+                      Save
+                    </button>
+                  </div>
+               </div>
+            </div>
+
+            <div className="bg-surface p-6 rounded-3xl border border-slate-200 shadow-sm">
+               <h3 className="text-[10px] font-black mb-4 text-secondary uppercase tracking-widest flex items-center gap-2">
+                 <Zap size={14} className="text-primary" /> Voltage Ranks Reference
+               </h3>
+               <div className="flex flex-col gap-3">
+                  {dynamicRanks.map((rank) => (
+                    <div key={rank.level} className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-xl bg-white shadow-sm" style={{ color: rank.color }}>
+                          <rank.icon size={16} />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-xs font-black text-text uppercase tracking-tight">{rank.name}</span>
+                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{Math.round(rank.factor * 100)}% of Goal</span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-sm font-black text-primary">{rank.minDays}</span>
+                        <span className="text-[8px] font-black text-secondary uppercase ml-1">Days</span>
+                      </div>
+                    </div>
+                  ))}
+                  <div className="mt-2 bg-primary/5 rounded-xl p-3 flex gap-3 items-start border border-primary/10">
+                     <Info size={14} className="text-primary shrink-0 mt-0.5" />
+                     <p className="text-[10px] font-medium text-slate-500 leading-relaxed">
+                       Ranks adjust dynamically as you change your <strong className="text-text">Target Threshold</strong>. Reaching your goal signifies hitting the <strong className="text-text">Singularity</strong> rank.
+                     </p>
+                  </div>
+               </div>
+            </div>
+
             <div className="bg-surface p-6 rounded-3xl border border-slate-200">
-               <h3 className="text-[10px] font-black mb-4 text-secondary uppercase tracking-widest">Profile</h3>
+               <h3 className="text-[10px] font-black mb-4 text-secondary uppercase tracking-widest">Access</h3>
                {user ? (
                  <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl">
                     <div className="p-2 bg-primary/10 rounded-full text-primary"><UserIcon size={16} /></div>
-                    <div className="flex flex-col overflow-hidden"><span className="text-[10px] font-bold text-secondary uppercase">Signed In As</span><span className="text-xs font-bold truncate text-text">{user.email}</span></div>
+                    <div className="flex flex-col overflow-hidden"><span className="text-[10px] font-bold text-secondary uppercase">Authenticated as</span><span className="text-xs font-bold truncate text-text">{user.email}</span></div>
                  </div>
-               ) : <button onClick={handleSignIn} className="w-full bg-primary text-white font-black py-4 rounded-2xl shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform">Connect Google Account</button>}
+               ) : <button onClick={handleSignIn} className="w-full bg-primary text-white font-black py-4 rounded-2xl shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform">Connect Google Grid</button>}
             </div>
           </div>
         )}
@@ -841,14 +986,14 @@ export default function App() {
               <button onClick={() => setShowInstallModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-text"><X size={20} /></button>
               <div className="flex flex-col items-center text-center gap-4">
                  <div className="p-4 bg-primary/10 rounded-2xl text-primary mb-2"><Download size={32} /></div>
-                 <h3 className="text-xl font-black text-text">Install App</h3>
+                 <h3 className="text-xl font-black text-text">Initialize Local Grid</h3>
                  <p className="text-sm text-secondary font-medium leading-relaxed">To install Streaker on your device, tap the <strong className="text-text">Share</strong> button in your browser menu and select <strong className="text-text">Add to Home Screen</strong>.</p>
                  <div className="w-full bg-slate-50 rounded-xl p-4 flex flex-col gap-3 mt-2 border border-slate-100">
                     <div className="flex items-center gap-3 text-xs font-bold text-slate-500"><Share size={16} className="text-primary" /><span>1. Tap Share</span></div>
                     <div className="w-full h-px bg-slate-200"></div>
                     <div className="flex items-center gap-3 text-xs font-bold text-slate-500"><PlusSquare size={16} className="text-primary" /><span>2. Add to Home Screen</span></div>
                  </div>
-                 <button onClick={() => setShowInstallModal(false)} className="w-full py-3 bg-primary text-white rounded-xl font-black text-sm mt-2">Got it</button>
+                 <button onClick={() => setShowInstallModal(false)} className="w-full py-3 bg-primary text-white rounded-xl font-black text-sm mt-2">Understood</button>
               </div>
            </div>
         </div>
@@ -858,9 +1003,9 @@ export default function App() {
       {isEditingStart && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] flex items-center justify-center p-6 animate-fade-in">
           <div className="bg-white rounded-[32px] p-8 max-w-sm w-full shadow-2xl">
-            <h3 className="text-2xl font-black mb-6">Edit Start Date</h3>
+            <h3 className="text-2xl font-black mb-6">Update Start</h3>
             <div className="mb-8"><input type="date" value={tempStart} onChange={e => setTempStart(e.target.value)} className="w-full p-4 bg-slate-50 rounded-2xl text-center font-bold text-lg" /></div>
-            <div className="flex gap-3"><button onClick={() => setIsEditingStart(false)} className="flex-1 p-4 bg-slate-100 rounded-2xl font-bold">Cancel</button><button onClick={handleStartSubmit} className="flex-1 p-4 bg-primary text-white rounded-2xl font-black">Update</button></div>
+            <div className="flex gap-3"><button onClick={() => setIsEditingStart(false)} className="flex-1 p-4 bg-slate-100 rounded-2xl font-bold">Cancel</button><button onClick={handleStartSubmit} className="flex-1 p-4 bg-primary text-white rounded-2xl font-black">Adjust Grid</button></div>
           </div>
         </div>
       )}
@@ -869,10 +1014,10 @@ export default function App() {
       {isEditingGoal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] flex items-center justify-center p-6 animate-fade-in">
           <div className="bg-white rounded-[32px] p-8 max-w-sm w-full shadow-2xl">
-            <h3 className="text-2xl font-black mb-6">Edit Goal</h3>
+            <h3 className="text-2xl font-black mb-6">Target Threshold</h3>
             <div className="flex bg-slate-100 p-1 rounded-2xl mb-6"><button onClick={() => setGoalMode('days')} className={`flex-1 py-3 rounded-xl text-xs font-black ${goalMode === 'days' ? 'bg-white text-primary' : ''}`}>Days</button><button onClick={() => setGoalMode('date')} className={`flex-1 py-3 rounded-xl text-xs font-black ${goalMode === 'date' ? 'bg-white text-primary' : ''}`}>Date</button></div>
             <div className="mb-8">{goalMode === 'days' ? <input type="number" value={tempGoal} onChange={e => setTempGoal(e.target.value)} className="w-full p-4 bg-slate-50 rounded-2xl text-center text-2xl font-black" /> : <input type="date" value={tempGoalDate} onChange={e => setTempGoalDate(e.target.value)} className="w-full p-4 bg-slate-50 rounded-2xl text-center" />}</div>
-            <div className="flex gap-3"><button onClick={() => setIsEditingGoal(false)} className="flex-1 p-4 bg-slate-100 rounded-2xl font-bold">Cancel</button><button onClick={handleGoalSubmit} className="flex-1 p-4 bg-primary text-white rounded-2xl font-black">Set</button></div>
+            <div className="flex gap-3"><button onClick={() => setIsEditingGoal(false)} className="flex-1 p-4 bg-slate-100 rounded-2xl font-bold">Cancel</button><button onClick={handleGoalSubmit} className="flex-1 p-4 bg-primary text-white rounded-2xl font-black">Set Target</button></div>
           </div>
         </div>
       )}
@@ -881,12 +1026,12 @@ export default function App() {
       {isAddingHistory && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] flex items-center justify-center p-6 animate-fade-in">
           <div className="bg-white rounded-[32px] p-8 max-w-sm w-full shadow-2xl">
-            <h3 className="text-2xl font-black mb-6">Add History</h3>
+            <h3 className="text-2xl font-black mb-6">Log Past Energy</h3>
             <div className="space-y-4 mb-8">
               <input type="date" value={manualStart} onChange={e => setManualStart(e.target.value)} className="w-full p-4 bg-slate-50 rounded-2xl border-2 border-slate-100" />
               <input type="date" value={manualEnd} onChange={e => setManualEnd(e.target.value)} className="w-full p-4 bg-slate-50 rounded-2xl border-2 border-slate-100" />
             </div>
-            <div className="flex gap-3"><button onClick={() => setIsAddingHistory(false)} className="flex-1 p-4 bg-slate-100 rounded-2xl font-bold">Cancel</button><button onClick={handleManualHistorySubmit} className="flex-1 p-4 bg-primary text-white rounded-2xl font-black">Save</button></div>
+            <div className="flex gap-3"><button onClick={() => setIsAddingHistory(false)} className="flex-1 p-4 bg-slate-100 rounded-2xl font-bold">Cancel</button><button onClick={handleManualHistorySubmit} className="flex-1 p-4 bg-primary text-white rounded-2xl font-black">Store Log</button></div>
           </div>
         </div>
       )}
@@ -895,18 +1040,18 @@ export default function App() {
       {showResetConfirm && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6 animate-fade-in">
           <div className="bg-white rounded-[32px] p-8 max-w-sm w-full shadow-2xl">
-            <h3 className="text-2xl font-black mb-4 text-center text-danger">Relapsed?</h3>
-            <p className="text-slate-500 text-sm mb-8 text-center">Every end is a new beginning. We'll save your current progress to history.</p>
-            <div className="flex gap-3"><button onClick={() => setShowResetConfirm(false)} className="flex-1 p-4 bg-slate-100 rounded-2xl font-bold">Cancel</button><button onClick={handleReset} className="flex-1 p-4 bg-danger text-white rounded-2xl font-black">Reset Streak</button></div>
+            <h3 className="text-2xl font-black mb-4 text-center text-danger">Grid Breach?</h3>
+            <p className="text-slate-500 text-sm mb-8 text-center leading-relaxed">Energy discharged. Grounding the system. History will be archived for re-analysis.</p>
+            <div className="flex gap-3"><button onClick={() => setShowResetConfirm(false)} className="flex-1 p-4 bg-slate-100 rounded-2xl font-bold">Cancel</button><button onClick={handleReset} className="flex-1 p-4 bg-danger text-white rounded-2xl font-black">Reset Grid</button></div>
           </div>
         </div>
       )}
 
       <nav className="fixed bottom-0 w-full bg-white/95 backdrop-blur-md border-t border-slate-100 pb-safe z-50">
         <div className="max-w-md mx-auto flex justify-around p-3">
-          <NavButton active={view === 'dashboard'} onClick={() => setView('dashboard')} icon={Shield} label="Streak" />
-          <NavButton active={view === 'history'} onClick={() => setView('history')} icon={HistoryIcon} label="History" />
-          <NavButton active={view === 'settings'} onClick={() => setView('settings')} icon={Settings} label="Settings" />
+          <NavButton active={view === 'dashboard'} onClick={() => setView('dashboard')} icon={Shield} label="Grid" />
+          <NavButton active={view === 'history'} onClick={() => setView('history')} icon={HistoryIcon} label="Logs" />
+          <NavButton active={view === 'settings'} onClick={() => setView('settings')} icon={Settings} label="Grid Config" />
         </div>
       </nav>
     </div>
