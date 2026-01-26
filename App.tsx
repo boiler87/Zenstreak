@@ -61,7 +61,7 @@ import { getMotivation, getStreakForecast, getMilestoneCelebration } from './ser
 type User = any;
 
 // --- Constants ---
-const APP_VERSION = "3.6.0";
+const APP_VERSION = "3.6.1";
 const MILLIS_PER_DAY = 1000 * 60 * 60 * 24;
 
 // --- Gamification Data Structures (Non-Electrical) ---
@@ -398,7 +398,7 @@ export default function App() {
     } catch (e: any) {
       console.error("Login Error:", e);
       setIsRedirecting(false);
-      setAuthError(e.message || "Failed to start Google Login.");
+      setAuthError(e.message || "Failed to start login.");
     }
   };
 
@@ -431,7 +431,7 @@ export default function App() {
       currentStreakStart: todayTimestamp,
       totalEvents: (data.totalEvents || 0) + 1, 
       history: [newHistoryItem, ...data.history],
-      celebratedMilestones: [] // Reset milestones on relapse to allow re-celebration
+      celebratedMilestones: [] 
     };
 
     setData(newData);
@@ -975,7 +975,7 @@ export default function App() {
                     </div>
                   ))}
                   <div className="mt-2 bg-primary/5 rounded-xl p-3 flex gap-3 items-start border border-primary/10">
-                     <Info size={14} className="text-primary shrink-0 mt-0.5" />
+                     <div className="shrink-0 mt-0.5"><Info size={14} className="text-primary" /></div>
                      <p className="text-[10px] font-medium text-slate-500 leading-relaxed">
                        Ranks adjust dynamically as you change your <strong className="text-text">Target Threshold</strong>. Reaching your goal signifies hitting the <strong className="text-text">Mastery</strong> rank.
                      </p>

@@ -1,7 +1,8 @@
-const CACHE_NAME = 'streaker-v3.4.18';
+const CACHE_NAME = 'streaker-v3.6.1';
 const urlsToCache = [
-  'index.html',
-  'manifest.json'
+  '/',
+  '/index.html',
+  '/manifest.json'
 ];
 
 self.addEventListener('install', (event) => {

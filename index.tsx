@@ -22,7 +22,7 @@ window.addEventListener('unhandledrejection', (event) => {
   }
 });
 
-console.log("%c Streaker v3.6.0 ", "background: #d4af37; color: #000000; font-weight: bold; padding: 4px;");
+console.log("%c Streaker v3.6.1 ", "background: #d4af37; color: #000000; font-weight: bold; padding: 4px;");
 
 const rootElement = document.getElementById('root');
 if (!rootElement) throw new Error("Root not found");
