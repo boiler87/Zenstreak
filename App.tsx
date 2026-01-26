@@ -3,7 +3,6 @@ import {
   RotateCcw, 
   History as HistoryIcon, 
   Settings, 
-  Zap, 
   Flame, 
   Calendar as CalendarIcon, 
   Target, 
@@ -29,15 +28,14 @@ import {
   Download, 
   Share, 
   PlusSquare, 
-  Image as ImageIcon, 
   ChevronLeft, 
   ChevronRight,
   Smile,
-  Battery,
-  BatteryCharging,
-  BatteryFull,
-  Cpu,
-  Info
+  Activity,
+  Trophy,
+  Crown,
+  Info,
+  Award
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -49,7 +47,7 @@ import {
   Cell 
 } from 'recharts';
 
-import { UserData, StreakHistoryItem, ForecastResponse } from './types';
+import { UserData, StreakHistoryItem, ForecastResponse, CelebrationResponse } from './types';
 import { 
   getUserData, 
   saveUserData,
@@ -57,27 +55,26 @@ import {
   signInWithGoogle,
   logout,
 } from './services/firebase';
-import { getMotivation, getStreakForecast } from './services/geminiService';
+import { getMotivation, getStreakForecast, getMilestoneCelebration } from './services/geminiService';
 
 // Define User type as any to handle missing exports in environment
 type User = any;
 
 // --- Constants ---
-const APP_VERSION = "3.4.18";
+const APP_VERSION = "3.6.0";
 const MILLIS_PER_DAY = 1000 * 60 * 60 * 24;
 
-// --- Gamification Data Structures ---
+// --- Gamification Data Structures (Non-Electrical) ---
 const RANK_METADATA = [
-  { level: 1, name: "Static", factor: 0, color: "#94a3b8", glow: "rgba(148, 163, 184, 0.3)", icon: Battery },
-  { level: 2, name: "Kinetic", factor: 0.1, color: "#38bdf8", glow: "rgba(56, 189, 248, 0.4)", icon: BatteryCharging },
-  { level: 3, name: "Live Wire", factor: 0.25, color: "#fbbf24", glow: "rgba(251, 191, 36, 0.5)", icon: Zap },
-  { level: 4, name: "High Tension", factor: 0.45, color: "#f59e0b", glow: "rgba(245, 158, 11, 0.6)", icon: Cpu },
-  { level: 5, name: "Transformer", factor: 0.65, color: "#d97706", glow: "rgba(217, 119, 6, 0.7)", icon: Flame },
-  { level: 6, name: "Supergrid", factor: 0.85, color: "#d4af37", glow: "rgba(212, 175, 55, 0.8)", icon: Milestone },
-  { level: 7, name: "Singularity", factor: 1.0, color: "#000000", glow: "rgba(212, 175, 55, 0.9)", icon: Sparkles },
+  { level: 1, name: "Seed", factor: 0, color: "#94a3b8", icon: UserIcon },
+  { level: 2, name: "Momentum", factor: 0.1, color: "#38bdf8", icon: Activity },
+  { level: 3, name: "Intentional", factor: 0.25, color: "#fbbf24", icon: Target },
+  { level: 4, name: "Resilience", factor: 0.45, color: "#f59e0b", icon: Shield },
+  { level: 5, name: "Clarity", factor: 0.65, color: "#d97706", icon: Sparkles },
+  { level: 6, name: "Ascendant", factor: 0.85, color: "#d4af37", icon: Crown },
+  { level: 7, name: "Mastery", factor: 1.0, color: "#000000", icon: Trophy },
 ];
 
-// SVG Logo Component based on user provided image
 const Logo = ({ className = "w-8 h-8" }: { className?: string }) => (
   <svg viewBox="0 0 512 512" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
     <path 
@@ -125,7 +122,7 @@ const parseLocalDate = (dateString: string): number => {
 const LoadingSpinner = () => (
   <div className="flex flex-col gap-4 justify-center items-center h-full text-primary animate-pulse">
     <div className="w-12 h-12 border-4 border-current border-t-transparent rounded-full animate-spin"></div>
-    <span className="text-xs font-bold tracking-widest uppercase">Syncing Grid...</span>
+    <span className="text-xs font-bold tracking-widest uppercase">Syncing Data...</span>
   </div>
 );
 
@@ -140,7 +137,6 @@ const StreakProgress = ({ start, goal, currentRank }: { start: number; goal: num
 
   return (
     <div className="relative flex items-center justify-center select-none my-6">
-      {/* Voltage Aura Effect */}
       <div 
         className="absolute inset-0 rounded-full blur-3xl opacity-30 transition-all duration-1000 animate-pulse"
         style={{ backgroundColor: currentRank.color, transform: `scale(${1 + (days / 100)})` }}
@@ -148,7 +144,7 @@ const StreakProgress = ({ start, goal, currentRank }: { start: number; goal: num
       
       <svg height={radius * 2} width={radius * 2} className="rotate-[-90deg] transition-all duration-1000 relative z-10">
         <defs>
-          <linearGradient id="voltage-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+          <linearGradient id="progress-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor={currentRank.color} />
             <stop offset="100%" stopColor="#d4af37" />
           </linearGradient>
@@ -162,7 +158,7 @@ const StreakProgress = ({ start, goal, currentRank }: { start: number; goal: num
         </defs>
         <circle stroke="#f8fafc" strokeWidth={stroke} fill="transparent" r={normalizedRadius} cx={radius} cy={radius} />
         <circle 
-          stroke="url(#voltage-gradient)" 
+          stroke="url(#progress-gradient)" 
           strokeWidth={stroke} 
           strokeDasharray={circumference + ' ' + circumference} 
           style={{ strokeDashoffset, filter: days > 7 ? 'url(#glow)' : 'none' }} 
@@ -202,7 +198,7 @@ export default function App() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [isRedirecting, setIsRedirecting] = useState(false);
 
-  const [motivation, setMotivation] = useState<string>("Discipline is the bridge between goals and accomplishment.");
+  const [motivation, setMotivation] = useState<string>("True strength is found in discipline.");
   const [forecast, setForecast] = useState<ForecastResponse | null>(null);
   const [loadingMotivation, setLoadingMotivation] = useState(false);
   const [loadingForecast, setLoadingForecast] = useState(false);
@@ -234,6 +230,10 @@ export default function App() {
 
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [selectedDayDetails, setSelectedDayDetails] = useState<{date: string, statuses: string[], details: string[]} | null>(null);
+
+  // Milestone Celebration State
+  const [celebration, setCelebration] = useState<CelebrationResponse | null>(null);
+  const [isCelebrating, setIsCelebrating] = useState(false);
 
   // Username feature state
   const [tempUsername, setTempUsername] = useState("");
@@ -305,7 +305,7 @@ export default function App() {
     return data && data.currentStreakStart ? calculateDays(data.currentStreakStart) : 0;
   }, [data, tick]);
 
-  // --- Dynamic Voltage Ranks Logic ---
+  // --- Dynamic Ranks Logic ---
   const dynamicRanks = useMemo(() => {
     const goal = data?.goal || 30;
     return RANK_METADATA.map(rank => ({
@@ -314,19 +314,54 @@ export default function App() {
     }));
   }, [data?.goal]);
 
-  const currentVoltage = useMemo(() => {
+  const currentRank = useMemo(() => {
     return [...dynamicRanks].reverse().find(rank => currentDays >= rank.minDays) || dynamicRanks[0];
   }, [dynamicRanks, currentDays]);
 
-  const nextVoltage = useMemo(() => {
+  const nextRank = useMemo(() => {
     return dynamicRanks.find(rank => currentDays < rank.minDays) || null;
   }, [dynamicRanks, currentDays]);
   
-  const powerLevel = useMemo(() => {
+  const focusScore = useMemo(() => {
     if (!data) return 0;
     const totalLifetimeDays = data.history.reduce((sum, h) => sum + h.days, 0) + currentDays;
     return (currentDays * 10) + Math.floor(totalLifetimeDays / 2);
   }, [data, currentDays]);
+
+  // Milestone check logic
+  useEffect(() => {
+    if (!data || loading) return;
+
+    const milestones = [
+      { id: `goal_${data.goal}`, name: 'Target Threshold Hit', condition: currentDays >= data.goal },
+      { id: `rank_${currentRank.name}`, name: `Rank Attained: ${currentRank.name}`, condition: currentRank.level > 1 },
+      { id: 'days_7', name: '7 Days Focused', condition: currentDays >= 7 },
+      { id: 'days_14', name: '14 Days Focused', condition: currentDays >= 14 },
+      { id: 'days_30', name: '30 Days Focused', condition: currentDays >= 30 },
+      { id: 'days_50', name: '50 Days Focused', condition: currentDays >= 50 },
+      { id: 'days_90', name: '90 Days Focused', condition: currentDays >= 90 },
+      { id: 'days_100', name: '100 Days Focused', condition: currentDays >= 100 },
+    ];
+
+    const uncelebrated = milestones.find(m => m.condition && !(data.celebratedMilestones || []).includes(m.id));
+
+    if (uncelebrated) {
+      const triggerCelebration = async () => {
+        const res = await getMilestoneCelebration(uncelebrated.name, currentDays, currentRank.name);
+        setCelebration(res);
+        setIsCelebrating(true);
+        
+        // Save milestone as celebrated
+        const newData = {
+          ...data,
+          celebratedMilestones: [...(data.celebratedMilestones || []), uncelebrated.id]
+        };
+        setData(newData);
+        saveUserData(user, newData);
+      };
+      triggerCelebration();
+    }
+  }, [currentDays, currentRank.name, data, loading, user]);
 
   const handleFetchInsights = useCallback(async () => {
     if (!data) return;
@@ -342,7 +377,7 @@ export default function App() {
       if (foreData) setForecast(foreData);
     } catch (e) {
       console.error("AI Insight Error", e);
-      setMotivation("Stay the course. The results will speak for themselves.");
+      setMotivation("Stay committed to the path of mastery.");
     } finally {
       setLoadingMotivation(false);
       setLoadingForecast(false);
@@ -395,7 +430,8 @@ export default function App() {
       ...data,
       currentStreakStart: todayTimestamp,
       totalEvents: (data.totalEvents || 0) + 1, 
-      history: [newHistoryItem, ...data.history]
+      history: [newHistoryItem, ...data.history],
+      celebratedMilestones: [] // Reset milestones on relapse to allow re-celebration
     };
 
     setData(newData);
@@ -414,7 +450,7 @@ export default function App() {
     const newDate = parseLocalDate(tempStart);
     if (isNaN(newDate)) return;
     if (newDate > Date.now()) {
-        alert("Cannot start a streak in the future.");
+        alert("Cannot start a journey in the future.");
         return;
     }
     const newData = { ...data, currentStreakStart: newDate };
@@ -526,14 +562,14 @@ export default function App() {
         isCurrent = true;
         rangesCount++;
         const daysIn = Math.floor((checkDate - data.currentStreakStart) / MILLIS_PER_DAY);
-        details.push(`Current Streak: Day ${daysIn}`);
+        details.push(`Current Journey: Day ${daysIn}`);
     }
     data.history.forEach(h => {
         if (checkDate >= h.startDate && checkDate <= h.endDate) {
             isPast = true;
             rangesCount++;
             const dayOfStreak = Math.floor((checkDate - h.startDate) / MILLIS_PER_DAY);
-            details.push(`Past Streak: Day ${dayOfStreak} of ${h.days}`);
+            details.push(`Past Journey: Day ${dayOfStreak} of ${h.days}`);
         }
     });
     return { isCurrent, isPast, isOverlap: rangesCount > 1, details };
@@ -632,7 +668,7 @@ export default function App() {
                 className="flex items-center gap-2 text-[10px] font-black bg-primary text-white px-4 py-2 rounded-full shadow-md shadow-primary/20 disabled:opacity-70 transition-all hover:bg-primary/90"
               >
                 {isRedirecting ? <Loader2 size={14} className="animate-spin" /> : <LogIn size={14} />}
-                {isRedirecting ? "Syncing Grid..." : "Sync"}
+                {isRedirecting ? "Syncing..." : "Sync"}
               </button>
             )}
         </div>
@@ -643,7 +679,7 @@ export default function App() {
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-start gap-3 text-xs shadow-sm">
              <AlertCircle size={14} className="mt-0.5 shrink-0" />
              <div className="flex-1">
-                <p className="font-bold">Grid Sync Error</p>
+                <p className="font-bold">Sync Error</p>
                 <p className="mt-1 opacity-80 break-words leading-relaxed">{authError}</p>
              </div>
              <button onClick={() => setAuthError(null)} className="shrink-0 p-1 hover:bg-red-100 rounded-lg"><X size={14}/></button>
@@ -656,28 +692,28 @@ export default function App() {
           <div className="animate-fade-in flex flex-col gap-6">
             <div className="bg-surface rounded-[40px] p-6 flex flex-col items-center justify-center shadow-xl shadow-slate-200/50 border border-slate-100 relative overflow-hidden">
                
-               <StreakProgress start={data.currentStreakStart || Date.now()} goal={data.goal} currentRank={currentVoltage} />
+               <StreakProgress start={data.currentStreakStart || Date.now()} goal={data.goal} currentRank={currentRank} />
 
-               {/* Rank Badge Indicator & Next Rank Info - MOVED BELOW COUNTER */}
+               {/* Rank Badge Indicator & Next Rank Info */}
                <div className="flex flex-col items-center gap-3 mt-2 mb-6 z-20 w-full px-4">
                   <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-50 border border-slate-100 shadow-sm">
-                    <currentVoltage.icon size={14} style={{ color: currentVoltage.color }} className="animate-pulse" />
-                    <span className="text-[11px] font-black uppercase tracking-widest text-text">Current Rank: {currentVoltage.name}</span>
+                    <currentRank.icon size={14} style={{ color: currentRank.color }} className="animate-pulse" />
+                    <span className="text-[11px] font-black uppercase tracking-widest text-text">Current Rank: {currentRank.name}</span>
                   </div>
                   
-                  {nextVoltage && (
+                  {nextRank && (
                     <div className="flex flex-col items-center w-full max-w-[200px]">
                        <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden mb-2">
                           <div 
                             className="h-full transition-all duration-1000" 
                             style={{ 
-                              backgroundColor: currentVoltage.color, 
-                              width: `${((currentDays - currentVoltage.minDays) / (nextVoltage.minDays - currentVoltage.minDays)) * 100}%` 
+                              backgroundColor: currentRank.color, 
+                              width: `${((currentDays - currentRank.minDays) / (nextRank.minDays - currentRank.minDays)) * 100}%` 
                             }} 
                           />
                        </div>
                        <span className="text-[12px] font-black text-slate-500 uppercase tracking-widest text-center">
-                          {nextVoltage.minDays - currentDays} Days until {nextVoltage.name}
+                          {nextRank.minDays - currentDays} Days until {nextRank.name}
                        </span>
                     </div>
                   )}
@@ -699,17 +735,17 @@ export default function App() {
 
                <div className="grid grid-cols-2 gap-2 w-full relative z-20">
                   <div className="bg-slate-50 rounded-2xl p-3 flex flex-col items-center justify-center border border-slate-100">
-                     <Zap size={18} className="text-primary mb-1" />
-                     <span className="text-lg font-black text-text">{powerLevel}</span>
-                     <span className="text-[8px] font-black text-secondary uppercase tracking-widest">Energy Score</span>
+                     <Target size={18} className="text-primary mb-1" />
+                     <span className="text-lg font-black text-text">{focusScore}</span>
+                     <span className="text-[8px] font-black text-secondary uppercase tracking-widest">Focus Score</span>
                   </div>
                   <div className="bg-slate-50 rounded-2xl p-3 flex flex-col items-center justify-center border border-slate-100">
                      <Flame size={18} className="text-orange-500 mb-1" />
                      <span className="text-lg font-black text-text">{longestStreak}</span>
-                     <span className="text-[8px] font-black text-secondary uppercase tracking-widest">Max Load</span>
+                     <span className="text-[8px] font-black text-secondary uppercase tracking-widest">Max Mastery</span>
                   </div>
                   <button onClick={() => setIsEditingGoal(true)} className={`rounded-2xl p-3 flex flex-col items-center justify-center border transition-all duration-200 ${isEditingGoal ? 'bg-primary/5 border-primary' : 'bg-slate-50 border-slate-100'}`}>
-                     <Target size={18} className="text-primary mb-1" />
+                     <Milestone size={18} className="text-primary mb-1" />
                      <span className="text-lg font-black text-text">{data.goal}</span>
                      <span className="text-[8px] font-black text-secondary uppercase tracking-widest">Goal</span>
                   </button>
@@ -725,12 +761,12 @@ export default function App() {
                <div className="flex justify-between items-start mb-6">
                  <div className="flex items-center gap-2">
                    <Sparkles size={16} className="text-primary" />
-                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Grid Insight</span>
+                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Daily Insight</span>
                  </div>
                  <div className="flex items-center gap-2">
                    {forecast && !loadingForecast && (
                       <div className={`text-[8px] font-black px-2 py-1 rounded-lg border uppercase tracking-widest ${getConfidenceColor(forecast.confidenceLevel)}`}>
-                         {forecast.confidenceLevel} Integrity
+                         {forecast.confidenceLevel} Path
                       </div>
                    )}
                    <button onClick={handleFetchInsights} disabled={loadingMotivation || loadingForecast} className="text-slate-300 hover:text-primary p-1 transition-colors">
@@ -747,7 +783,7 @@ export default function App() {
                <div className="flex flex-col gap-3">
                    <div className="flex items-center gap-2 mb-1">
                      <TrendingUp size={12} className="text-secondary" />
-                     <span className="text-[9px] font-black text-secondary uppercase tracking-widest">Power Trajectory</span>
+                     <span className="text-[9px] font-black text-secondary uppercase tracking-widest">Growth Trajectory</span>
                    </div>
                    {loadingForecast ? (
                      <div className="flex items-center gap-2 text-slate-300 text-xs font-bold">
@@ -755,7 +791,7 @@ export default function App() {
                      </div>
                    ) : (
                      <>
-                       <p className="text-sm font-semibold text-slate-700 leading-relaxed">{forecast?.prediction || "Maintain intensity to stabilize the grid."}</p>
+                       <p className="text-sm font-semibold text-slate-700 leading-relaxed">{forecast?.prediction || "Maintain focus to secure your progress."}</p>
                        {forecast?.insight && (
                           <div className="bg-slate-50 rounded-xl p-3 flex gap-3 items-start border border-slate-100 mt-1">
                              <Lightbulb size={14} className="text-amber-500 shrink-0 mt-0.5" />
@@ -818,11 +854,11 @@ export default function App() {
             {historyTab === 'trends' && (
               <div className="flex flex-col gap-4 animate-fade-in">
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-surface p-4 rounded-3xl border border-slate-100 shadow-sm flex flex-col gap-1"><span className="text-[9px] font-black text-secondary uppercase tracking-widest">Total Days Denied</span><span className="text-2xl font-black text-primary">{stats.totalDays}</span></div>
-                  <div className="bg-surface p-4 rounded-3xl border border-slate-100 shadow-sm flex flex-col gap-1"><span className="text-[9px] font-black text-secondary uppercase tracking-widest">Avg Load Length</span><span className="text-2xl font-black text-text">{stats.avgStreak}</span></div>
+                  <div className="bg-surface p-4 rounded-3xl border border-slate-100 shadow-sm flex flex-col gap-1"><span className="text-[9px] font-black text-secondary uppercase tracking-widest">Total Days Gained</span><span className="text-2xl font-black text-primary">{stats.totalDays}</span></div>
+                  <div className="bg-surface p-4 rounded-3xl border border-slate-100 shadow-sm flex flex-col gap-1"><span className="text-[9px] font-black text-secondary uppercase tracking-widest">Avg Growth Length</span><span className="text-2xl font-black text-text">{stats.avgStreak}</span></div>
                 </div>
                 <div className="bg-surface p-6 rounded-3xl border border-slate-100 shadow-sm">
-                  <h3 className="text-[10px] font-black text-secondary uppercase tracking-widest mb-6 flex items-center gap-2"><BarChart3 size={14} className="text-primary" /> Charge History</h3>
+                  <h3 className="text-[10px] font-black text-secondary uppercase tracking-widest mb-6 flex items-center gap-2"><BarChart3 size={14} className="text-primary" /> Mastery History</h3>
                   <div className="h-64 w-full">
                     {chartData.length > 1 ? (
                       <ResponsiveContainer width="100%" height="100%">
@@ -865,10 +901,10 @@ export default function App() {
                   </div>
                 )}
                 <div className="flex flex-col gap-3 pb-12">
-                  {data.history.length === 0 ? <div className="text-center py-10 text-slate-400 text-sm italic">The energy grid is empty. Initiate a streak.</div> : sortedHistory.map((streak) => (
+                  {data.history.length === 0 ? <div className="text-center py-10 text-slate-400 text-sm italic">The path is clear. Begin your journey.</div> : sortedHistory.map((streak) => (
                       <div key={streak.id} className="bg-surface p-4 rounded-2xl border border-slate-200 flex justify-between items-center group hover:shadow-md transition-all">
                         <div className="flex flex-col">
-                          <div className="flex items-baseline gap-2"><span className="text-xl font-black text-text">{streak.days}</span><span className="text-[10px] font-black text-secondary uppercase">Days Charged</span></div>
+                          <div className="flex items-baseline gap-2"><span className="text-xl font-black text-text">{streak.days}</span><span className="text-[10px] font-black text-secondary uppercase">Days Mastered</span></div>
                           <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">{new Date(streak.startDate).toLocaleDateString()} - {new Date(streak.endDate).toLocaleDateString()}</span>
                         </div>
                         <div className="flex gap-1">
@@ -918,7 +954,7 @@ export default function App() {
 
             <div className="bg-surface p-6 rounded-3xl border border-slate-200 shadow-sm">
                <h3 className="text-[10px] font-black mb-4 text-secondary uppercase tracking-widest flex items-center gap-2">
-                 <Zap size={14} className="text-primary" /> Voltage Ranks Reference
+                 <Award size={14} className="text-primary" /> Mastery Ranks Reference
                </h3>
                <div className="flex flex-col gap-3">
                   {dynamicRanks.map((rank) => (
@@ -941,7 +977,7 @@ export default function App() {
                   <div className="mt-2 bg-primary/5 rounded-xl p-3 flex gap-3 items-start border border-primary/10">
                      <Info size={14} className="text-primary shrink-0 mt-0.5" />
                      <p className="text-[10px] font-medium text-slate-500 leading-relaxed">
-                       Ranks adjust dynamically as you change your <strong className="text-text">Target Threshold</strong>. Reaching your goal signifies hitting the <strong className="text-text">Singularity</strong> rank.
+                       Ranks adjust dynamically as you change your <strong className="text-text">Target Threshold</strong>. Reaching your goal signifies hitting the <strong className="text-text">Mastery</strong> rank.
                      </p>
                   </div>
                </div>
@@ -954,11 +990,40 @@ export default function App() {
                     <div className="p-2 bg-primary/10 rounded-full text-primary"><UserIcon size={16} /></div>
                     <div className="flex flex-col overflow-hidden"><span className="text-[10px] font-bold text-secondary uppercase">Authenticated as</span><span className="text-xs font-bold truncate text-text">{user.email}</span></div>
                  </div>
-               ) : <button onClick={handleSignIn} className="w-full bg-primary text-white font-black py-4 rounded-2xl shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform">Connect Google Grid</button>}
+               ) : <button onClick={handleSignIn} className="w-full bg-primary text-white font-black py-4 rounded-2xl shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform">Connect Google Profile</button>}
             </div>
           </div>
         )}
       </main>
+
+      {/* Milestone Celebration Modal */}
+      {isCelebrating && celebration && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-6 animate-fade-in">
+           <div className="bg-white rounded-[40px] p-10 max-w-sm w-full shadow-2xl relative text-center flex flex-col items-center">
+              <div className="absolute top-[-40px] p-6 bg-primary text-white rounded-full shadow-xl shadow-primary/30 border-4 border-white">
+                <Trophy size={48} />
+              </div>
+              <h2 className="text-3xl font-black text-text mt-8 mb-2">{celebration.title}</h2>
+              <div className="w-12 h-1 bg-primary rounded-full mb-6"></div>
+              <p className="text-lg font-bold text-slate-700 leading-relaxed italic mb-8">
+                "{celebration.message}"
+              </p>
+              <div className="w-full bg-slate-50 p-6 rounded-3xl border border-slate-100 flex flex-col gap-2">
+                 <div className="flex items-center justify-center gap-2 mb-1">
+                   <Crown size={14} className="text-primary" />
+                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Mastery Insight</span>
+                 </div>
+                 <p className="text-xs font-semibold text-slate-500">{celebration.rankInsight}</p>
+              </div>
+              <button 
+                onClick={() => setIsCelebrating(false)} 
+                className="w-full py-4 bg-primary text-white rounded-2xl font-black text-sm mt-8 shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
+              >
+                Continue The Path
+              </button>
+           </div>
+        </div>
+      )}
 
       {/* Selected Day Details Modal */}
       {selectedDayDetails && (
@@ -986,7 +1051,7 @@ export default function App() {
               <button onClick={() => setShowInstallModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-text"><X size={20} /></button>
               <div className="flex flex-col items-center text-center gap-4">
                  <div className="p-4 bg-primary/10 rounded-2xl text-primary mb-2"><Download size={32} /></div>
-                 <h3 className="text-xl font-black text-text">Initialize Local Grid</h3>
+                 <h3 className="text-xl font-black text-text">Initialize App</h3>
                  <p className="text-sm text-secondary font-medium leading-relaxed">To install Streaker on your device, tap the <strong className="text-text">Share</strong> button in your browser menu and select <strong className="text-text">Add to Home Screen</strong>.</p>
                  <div className="w-full bg-slate-50 rounded-xl p-4 flex flex-col gap-3 mt-2 border border-slate-100">
                     <div className="flex items-center gap-3 text-xs font-bold text-slate-500"><Share size={16} className="text-primary" /><span>1. Tap Share</span></div>
@@ -1005,7 +1070,7 @@ export default function App() {
           <div className="bg-white rounded-[32px] p-8 max-w-sm w-full shadow-2xl">
             <h3 className="text-2xl font-black mb-6">Update Start</h3>
             <div className="mb-8"><input type="date" value={tempStart} onChange={e => setTempStart(e.target.value)} className="w-full p-4 bg-slate-50 rounded-2xl text-center font-bold text-lg" /></div>
-            <div className="flex gap-3"><button onClick={() => setIsEditingStart(false)} className="flex-1 p-4 bg-slate-100 rounded-2xl font-bold">Cancel</button><button onClick={handleStartSubmit} className="flex-1 p-4 bg-primary text-white rounded-2xl font-black">Adjust Grid</button></div>
+            <div className="flex gap-3"><button onClick={() => setIsEditingStart(false)} className="flex-1 p-4 bg-slate-100 rounded-2xl font-bold">Cancel</button><button onClick={handleStartSubmit} className="flex-1 p-4 bg-primary text-white rounded-2xl font-black">Adjust Path</button></div>
           </div>
         </div>
       )}
@@ -1026,7 +1091,7 @@ export default function App() {
       {isAddingHistory && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] flex items-center justify-center p-6 animate-fade-in">
           <div className="bg-white rounded-[32px] p-8 max-w-sm w-full shadow-2xl">
-            <h3 className="text-2xl font-black mb-6">Log Past Energy</h3>
+            <h3 className="text-2xl font-black mb-6">Log Past Mastery</h3>
             <div className="space-y-4 mb-8">
               <input type="date" value={manualStart} onChange={e => setManualStart(e.target.value)} className="w-full p-4 bg-slate-50 rounded-2xl border-2 border-slate-100" />
               <input type="date" value={manualEnd} onChange={e => setManualEnd(e.target.value)} className="w-full p-4 bg-slate-50 rounded-2xl border-2 border-slate-100" />
@@ -1040,18 +1105,18 @@ export default function App() {
       {showResetConfirm && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6 animate-fade-in">
           <div className="bg-white rounded-[32px] p-8 max-w-sm w-full shadow-2xl">
-            <h3 className="text-2xl font-black mb-4 text-center text-danger">Grid Breach?</h3>
-            <p className="text-slate-500 text-sm mb-8 text-center leading-relaxed">Energy discharged. Grounding the system. History will be archived for re-analysis.</p>
-            <div className="flex gap-3"><button onClick={() => setShowResetConfirm(false)} className="flex-1 p-4 bg-slate-100 rounded-2xl font-bold">Cancel</button><button onClick={handleReset} className="flex-1 p-4 bg-danger text-white rounded-2xl font-black">Reset Grid</button></div>
+            <h3 className="text-2xl font-black mb-4 text-center text-danger">Relapse?</h3>
+            <p className="text-slate-500 text-sm mb-8 text-center leading-relaxed">Discipline lapsed. Re-centering the system. History will be archived for re-analysis.</p>
+            <div className="flex gap-3"><button onClick={() => setShowResetConfirm(false)} className="flex-1 p-4 bg-slate-100 rounded-2xl font-bold">Cancel</button><button onClick={handleReset} className="flex-1 p-4 bg-danger text-white rounded-2xl font-black">Confirm Relapse</button></div>
           </div>
         </div>
       )}
 
       <nav className="fixed bottom-0 w-full bg-white/95 backdrop-blur-md border-t border-slate-100 pb-safe z-50">
         <div className="max-w-md mx-auto flex justify-around p-3">
-          <NavButton active={view === 'dashboard'} onClick={() => setView('dashboard')} icon={Shield} label="Grid" />
+          <NavButton active={view === 'dashboard'} onClick={() => setView('dashboard')} icon={Shield} label="Journey" />
           <NavButton active={view === 'history'} onClick={() => setView('history')} icon={HistoryIcon} label="Logs" />
-          <NavButton active={view === 'settings'} onClick={() => setView('settings')} icon={Settings} label="Grid Config" />
+          <NavButton active={view === 'settings'} onClick={() => setView('settings')} icon={Settings} label="Config" />
         </div>
       </nav>
     </div>

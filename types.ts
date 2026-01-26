@@ -11,9 +11,10 @@ export interface UserData {
   goal: number; // Target days
   history: StreakHistoryItem[];
   uid?: string;
-  username?: string; // New field for user personalization
+  username?: string; 
   showMotivation?: boolean;
   totalEvents?: number; // Lifetime count of events
+  celebratedMilestones?: string[]; // IDs of milestones already celebrated
 }
 
 export interface MotivationResponse {
@@ -25,4 +26,10 @@ export interface ForecastResponse {
   prediction: string;
   confidenceLevel: 'High' | 'Medium' | 'Low';
   insight: string;
+}
+
+export interface CelebrationResponse {
+  title: string;
+  message: string;
+  rankInsight: string;
 }

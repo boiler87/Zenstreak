@@ -1,13 +1,10 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { SOURCE_MATERIAL } from "./knowledgeBase";
-import { StreakHistoryItem, ForecastResponse } from "../types";
+import { StreakHistoryItem, ForecastResponse, CelebrationResponse } from "../types";
 
-// Fallback API Key (from Firebase config) to ensure functionality if build env vars fail
 const FALLBACK_KEY = "AIzaSyDygmVHR9CQaC-00NZHFcWxQh1Gw6-N0eg";
 
 const getApiKey = (): string => {
-  // process.env.API_KEY is replaced by Vite at build time.
-  // If it's empty string or undefined, use the fallback.
   const key = process.env.API_KEY;
   if (key && key.length > 0 && key !== 'undefined') {
     return key;
@@ -15,74 +12,20 @@ const getApiKey = (): string => {
   return FALLBACK_KEY;
 };
 
-/**
- * Generates motivation using the Gemini API based on the user's current streak and goal.
- */
 export const getMotivation = async (days: number, goal: number): Promise<string> => {
   const apiKey = getApiKey();
-
-  if (!apiKey) {
-    console.warn("Gemini API Key is missing. AI features disabled.");
-    return "Cum denial is power. (AI Unavailable)";
-  }
+  if (!apiKey) return "Focus on the growth that comes from discipline.";
 
   try {
     const ai = new GoogleGenAI({ apiKey });
-
-    // Determine phase based on Source Material definitions
-    let context = "";
-    if (days <= 3) {
-      context = "Phase: Default/Voluntary. The user is just starting. The goal is NOT to cum.";
-    } else if (days <= 14) {
-      context = "Phase: Optional. The user feels the intense horniness. Frame this as 'intensity' to be enjoyed.";
-    } else if (days <= 30) {
-      context = "Phase: Exclusionary. Actively excluding orgasm. 'Brake and gas pedal both mashed to the floor'.";
-    } else {
-      context = "Phase: Transcendent. Orgasm is no longer the goal. The state of high charge is the goal.";
-    }
-
-    // Dynamic Context to force variety
-    const metaphors = [
-        "building a mental fortress", 
-        "forging steel in fire", 
-        "holding back the ocean tide", 
-        "climbing a steep mountain", 
-        "accumulating massive electrical potential", 
-        "charging a high-capacity battery",
-        "taming a wild beast within", 
-        "ancient stoic endurance", 
-        "biohacking the nervous system",
-        "withstanding deep sea pressure", 
-        "orbital mechanics and gravity", 
-        "containing volcanic pressure",
-        "tuning a high-performance engine",
-        "sharpening a blade to a razor edge",
-        "pulling back a heavy bowstring"
-    ];
-    const randomMetaphor = metaphors[Math.floor(Math.random() * metaphors.length)];
-
     const prompt = `
-      You are the author of the REFERENCE MATERIAL below. You are intense, direct, and obsessed with the power of 'Extended Cum Denial'.
-      
-      REFERENCE MATERIAL (Your Philosophy):
-      """
-      ${SOURCE_MATERIAL}
-      """
-
-      SITUATION:
-      - User Streak: ${days} days
-      - Goal: ${goal} days
-      - Phase: ${context}
-      - Metaphor to use: ${randomMetaphor}
+      You are an intense growth mentor based on the philosophy in the SOURCE MATERIAL.
+      MATERIAL: ${SOURCE_MATERIAL}
+      USER STATUS: Day ${days} of ${goal}. 
 
       TASK:
-      Generate a SINGLE, powerful, short sentence of motivation (max 20 words).
-
-      STRICT GUIDELINES:
-      1. USE YOUR VOICE: Speak like the author of the text. Use terms like "intensity", "power", "lustful", "voltage", "The Zone", "rewiring". 
-      2. REJECT GENERIC ADVICE: Do not sound like a generic life coach. Do not say "you can do it".
-      3. PHILOSOPHY: Remind the user that the urge to cum is a demand to be overruled for greater power. 
-      4. METAPHOR: Weave the assigned metaphor (${randomMetaphor}) into the author's specific philosophy of 'intensity over release'.
+      Generate 1 powerful, short motivational sentence (max 15 words). 
+      IMPORTANT: Avoid all metaphors to electricity, grids, voltage, or wiring. Use general terms like 'focus', 'mastery', 'discipline', 'intensity', 'clarity', and 'growth'.
     `;
 
     const response = await ai.models.generateContent({
@@ -90,86 +33,35 @@ export const getMotivation = async (days: number, goal: number): Promise<string>
       contents: prompt,
       config: {
         thinkingConfig: { thinkingBudget: 0 },
-        temperature: 1.3, // Very High creativity to mix the specific philosophy with random metaphors
-        topP: 0.95,
+        temperature: 1,
         responseMimeType: 'application/json',
         responseSchema: {
           type: Type.OBJECT,
-          properties: {
-            message: {
-              type: Type.STRING,
-              description: 'The generated motivation sentence.',
-            }
-          },
-          propertyOrdering: ["message"]
+          properties: { message: { type: Type.STRING } },
         }
       }
     });
-
-    const jsonText = response.text;
-    if (!jsonText) return "Deny the release to intensify the power.";
-    
-    const data = JSON.parse(jsonText.trim());
-    return data.message || "The goal is not to cum, but to ride the edge.";
-  } catch (error) {
-    console.error("Gemini API Error:", error);
-    return "Keep the energy high, deny the release.";
-  }
+    return JSON.parse(response.text).message;
+  } catch (e) { return "True strength is found in discipline."; }
 };
 
-/**
- * Predicts streak success and provides pattern analysis.
- */
 export const getStreakForecast = async (history: StreakHistoryItem[], currentDays: number, goal: number): Promise<ForecastResponse> => {
-  const defaultResponse: ForecastResponse = {
-    prediction: "Maintain your discipline to reach the goal.",
-    confidenceLevel: "Medium",
-    insight: "Consistency creates the rewiring."
-  };
-
   const apiKey = getApiKey();
-  if (!apiKey) return defaultResponse;
+  if (!apiKey) return { prediction: "Maintain your focus.", confidenceLevel: "Medium", insight: "Growth is a process." };
 
   try {
     const ai = new GoogleGenAI({ apiKey });
-    
-    const totalEntries = history.length;
-    const totalDays = history.reduce((acc, curr) => acc + curr.days, 0);
-    const avgStreak = totalEntries > 0 ? (totalDays / totalEntries).toFixed(1) : "0";
-    const maxStreak = Math.max(...history.map(h => h.days), 0);
-    const sortedHistory = [...history].sort((a,b) => b.endDate - a.endDate);
-    const last3 = sortedHistory.slice(0, 3).map(h => `${h.days} days`).join(", ");
-
     const prompt = `
-      You are the author of the text below. Analyze the user's data using your philosophy.
-
-      REFERENCE MATERIAL:
-      """
-      ${SOURCE_MATERIAL}
-      """
-
-      User Data:
-      - Current Streak: ${currentDays} days
-      - Goal: ${goal} days
-      - Best: ${maxStreak} days
-      - Avg: ${avgStreak} days
-      - Recent: ${last3 || "None"}
-
-      Task: Provide a structured forecast.
+      Analyze this user's progress and provide a forecast based on the philosophy in the SOURCE MATERIAL: ${SOURCE_MATERIAL}. 
+      Current Progress: ${currentDays} days, Goal: ${goal} days.
       
-      Guidelines:
-      - prediction: Direct statement (max 15 words).
-      - confidenceLevel: 'High', 'Medium', or 'Low'.
-      - insight: A short piece of tactical advice (max 15 words). MUST USE VOCABULARY FROM THE REFERENCE MATERIAL (e.g. "rewiring", "mashed pedals", "intensity", "muscle control", "The Zone").
+      IMPORTANT: Do not use electrical, grid, or wiring metaphors. Use terms related to psychological resilience and personal mastery.
     `;
-
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: prompt,
       config: {
         thinkingConfig: { thinkingBudget: 0 },
-        temperature: 1.1, 
-        topP: 0.95,
         responseMimeType: 'application/json',
         responseSchema: {
           type: Type.OBJECT,
@@ -178,19 +70,54 @@ export const getStreakForecast = async (history: StreakHistoryItem[], currentDay
             confidenceLevel: { type: Type.STRING, enum: ["High", "Medium", "Low"] },
             insight: { type: Type.STRING }
           },
-          required: ["prediction", "confidenceLevel", "insight"],
-          propertyOrdering: ["prediction", "confidenceLevel", "insight"]
+          required: ["prediction", "confidenceLevel", "insight"]
         }
       }
     });
+    return JSON.parse(response.text);
+  } catch (e) { return { prediction: "System stable.", confidenceLevel: "Medium", insight: "Stay committed to the path." }; }
+};
 
-    const jsonText = response.text;
-    if (!jsonText) return defaultResponse;
+export const getMilestoneCelebration = async (milestoneName: string, days: number, rankName: string): Promise<CelebrationResponse> => {
+  const apiKey = getApiKey();
+  if (!apiKey) return { title: "Milestone Reached", message: "Great job on your progress!", rankInsight: "Your discipline is growing." };
 
-    const data = JSON.parse(jsonText.trim()) as ForecastResponse;
-    return data;
-  } catch (error) {
-    console.error("Gemini Forecast Error:", error);
-    return defaultResponse;
+  try {
+    const ai = new GoogleGenAI({ apiKey });
+    const prompt = `
+      The user has reached a major milestone: "${milestoneName}" at ${days} days. 
+      Their current rank is "${rankName}".
+      
+      Based on the philosophy in the SOURCE MATERIAL (${SOURCE_MATERIAL}), write a short, intense celebration message.
+      
+      TASK:
+      1. 'title': A punchy 2-3 word headline.
+      2. 'message': A powerful acknowledgment of their discipline (max 25 words).
+      3. 'rankInsight': A brief comment on what this rank represents in terms of personal mastery.
+
+      CRITICAL: Use NO electrical, grid, or wiring metaphors. Use terms like 'willpower', 'clarity', 'ascension', 'mastery', and 'focus'.
+    `;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: prompt,
+      config: {
+        thinkingConfig: { thinkingBudget: 0 },
+        temperature: 1.1,
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            title: { type: Type.STRING },
+            message: { type: Type.STRING },
+            rankInsight: { type: Type.STRING }
+          },
+          required: ["title", "message", "rankInsight"]
+        }
+      }
+    });
+    return JSON.parse(response.text);
+  } catch (e) {
+    return { title: "Strength Found", message: "You have reached a new level of discipline.", rankInsight: "Your path to mastery continues." };
   }
 };
