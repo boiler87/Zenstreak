@@ -1,8 +1,7 @@
-const CACHE_NAME = 'streaker-v3.4.12';
+const CACHE_NAME = 'streaker-v3.4.14';
 const urlsToCache = [
   'index.html',
-  'manifest.json',
-  'https://raw.githubusercontent.com/boiler87/Zenstreak/main/icon.png'
+  'manifest.json'
 ];
 
 self.addEventListener('install', (event) => {

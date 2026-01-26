@@ -3,21 +3,21 @@
   "name": "Streaker Tracker",
   "icons": [
     {
-      "src": "https://raw.githubusercontent.com/boiler87/Zenstreak/main/icon.png",
+      "src": "data:image/svg+xml,%3Csvg viewBox='0 0 512 512' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='512' height='512' fill='white'/%3E%3Cpath d='M166 182C128.5 182 98 212.5 98 250C98 287.5 128.5 318 166 318C189.5 318 211 306 224 286L288 226C301 206 322.5 194 346 194C383.5 194 414 224.5 414 262C414 299.5 383.5 330 346 330C322.5 330 301 318 288 298L224 238C211 218 189.5 206 166 206C142.5 206 122 226.5 122 250C122 273.5 142.5 294 166 294' stroke='%23d4af37' stroke-width='28' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ctext x='50%25' y='52%25' dominant-baseline='middle' text-anchor='middle' fill='black' font-size='72' font-weight='900' font-family='sans-serif'%3EStreaker%3C/text%3E%3C/svg%3E",
       "sizes": "192x192",
-      "type": "image/png",
+      "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "https://raw.githubusercontent.com/boiler87/Zenstreak/main/icon.png",
+      "src": "data:image/svg+xml,%3Csvg viewBox='0 0 512 512' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='512' height='512' fill='white'/%3E%3Cpath d='M166 182C128.5 182 98 212.5 98 250C98 287.5 128.5 318 166 318C189.5 318 211 306 224 286L288 226C301 206 322.5 194 346 194C383.5 194 414 224.5 414 262C414 299.5 383.5 330 346 330C322.5 330 301 318 288 298L224 238C211 218 189.5 206 166 206C142.5 206 122 226.5 122 250C122 273.5 142.5 294 166 294' stroke='%23d4af37' stroke-width='28' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ctext x='50%25' y='52%25' dominant-baseline='middle' text-anchor='middle' fill='black' font-size='72' font-weight='900' font-family='sans-serif'%3EStreaker%3C/text%3E%3C/svg%3E",
       "sizes": "512x512",
-      "type": "image/png",
+      "type": "image/svg+xml",
       "purpose": "any"
     }
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#0d9488",
+  "theme_color": "#d4af37",
   "background_color": "#fcfcfc",
   "orientation": "portrait"
 }
