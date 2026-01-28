@@ -1,4 +1,4 @@
-const CACHE_NAME = 'streaker-v3.6.1';
+const CACHE_NAME = 'streaker-v3.6.7';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -11,7 +11,7 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME)
       .then((cache) => {
         return cache.addAll(urlsToCache).catch(err => {
-            console.error('SW: Failed to cache some assets', err);
+            console.error('SW: Failed to cache assets', err);
         });
       })
   );

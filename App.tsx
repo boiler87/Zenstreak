@@ -35,7 +35,8 @@ import {
   Trophy,
   Crown,
   Info,
-  Award
+  Award,
+  HelpCircle
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -61,7 +62,7 @@ import { getMotivation, getStreakForecast, getMilestoneCelebration } from './ser
 type User = any;
 
 // --- Constants ---
-const APP_VERSION = "3.6.1";
+const APP_VERSION = "3.6.7";
 const MILLIS_PER_DAY = 1000 * 60 * 60 * 24;
 
 // --- Gamification Data Structures (Non-Electrical) ---
@@ -238,6 +239,9 @@ export default function App() {
   // Username feature state
   const [tempUsername, setTempUsername] = useState("");
 
+  // Focus Score Info state
+  const [showFocusScoreInfo, setShowFocusScoreInfo] = useState(false);
+
   useEffect(() => {
     setIsAppInstalled(isStandalone());
   }, []);
@@ -328,6 +332,12 @@ export default function App() {
     return (currentDays * 10) + Math.floor(totalLifetimeDays / 2);
   }, [data, currentDays]);
 
+  const targetGoalDate = useMemo(() => {
+    if (!data) return null;
+    const target = new Date((data.currentStreakStart || Date.now()) + data.goal * MILLIS_PER_DAY);
+    return target.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  }, [data]);
+
   // Milestone check logic
   useEffect(() => {
     if (!data || loading) return;
@@ -377,7 +387,7 @@ export default function App() {
       if (foreData) setForecast(foreData);
     } catch (e) {
       console.error("AI Insight Error", e);
-      setMotivation("Stay committed to the path of mastery.");
+      setMotivation("Focus on the growth that comes from discipline.");
     } finally {
       setLoadingMotivation(false);
       setLoadingForecast(false);
@@ -734,10 +744,32 @@ export default function App() {
                </div>
 
                <div className="grid grid-cols-2 gap-2 w-full relative z-20">
-                  <div className="bg-slate-50 rounded-2xl p-3 flex flex-col items-center justify-center border border-slate-100">
+                  <div 
+                    className="bg-slate-50 rounded-2xl p-3 flex flex-col items-center justify-center border border-slate-100 relative cursor-help transition-all hover:bg-white active:scale-95 overflow-visible"
+                    onMouseEnter={() => setShowFocusScoreInfo(true)}
+                    onMouseLeave={() => setShowFocusScoreInfo(false)}
+                    onClick={() => setShowFocusScoreInfo(!showFocusScoreInfo)}
+                  >
                      <Target size={18} className="text-primary mb-1" />
-                     <span className="text-lg font-black text-text">{focusScore}</span>
+                     <div className="flex items-center gap-1">
+                        <span className="text-lg font-black text-text">{focusScore}</span>
+                        <HelpCircle size={10} className="text-slate-300" />
+                     </div>
                      <span className="text-[8px] font-black text-secondary uppercase tracking-widest">Focus Score</span>
+                     
+                     {/* Focus Score Tooltip */}
+                     {showFocusScoreInfo && (
+                        <div className="absolute top-[-90px] left-[-20%] right-[-20%] bg-text text-white p-4 rounded-2xl shadow-2xl z-[100] animate-fade-in text-center flex flex-col gap-1 border border-white/10 pointer-events-none">
+                           <span className="text-[10px] font-black uppercase tracking-widest text-primary">Calculation</span>
+                           <p className="text-[11px] font-bold leading-relaxed opacity-90">
+                              (Current Streak × 10) + (Lifetime Total ÷ 2)
+                           </p>
+                           <p className="text-[9px] font-medium opacity-60">
+                              A composite score measuring current momentum and cumulative mastery.
+                           </p>
+                           <div className="absolute bottom-[-6px] left-1/2 -translate-x-1/2 w-3 h-3 bg-text rotate-45 border-r border-b border-white/10"></div>
+                        </div>
+                     )}
                   </div>
                   <div className="bg-slate-50 rounded-2xl p-3 flex flex-col items-center justify-center border border-slate-100">
                      <Flame size={18} className="text-orange-500 mb-1" />
@@ -748,6 +780,7 @@ export default function App() {
                      <Milestone size={18} className="text-primary mb-1" />
                      <span className="text-lg font-black text-text">{data.goal}</span>
                      <span className="text-[8px] font-black text-secondary uppercase tracking-widest">Goal</span>
+                     <span className="text-[9px] font-bold text-slate-400 mt-0.5">{targetGoalDate}</span>
                   </button>
                   <button onClick={() => setShowResetConfirm(true)} className="bg-slate-50 hover:bg-red-50 rounded-2xl p-3 flex flex-col items-center justify-center border border-slate-100 hover:border-red-100 transition-colors group active:scale-95">
                      <RotateCcw size={18} className="text-slate-400 group-hover:text-danger mb-1 transition-colors" />
