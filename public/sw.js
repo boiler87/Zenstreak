@@ -1,8 +1,8 @@
-const CACHE_NAME = 'streaker-v3.6.7';
+const CACHE_NAME = 'streaker-v3.6.8';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/manifest.json'
+  './',
+  './index.html',
+  './manifest.json'
 ];
 
 self.addEventListener('install', (event) => {
@@ -37,7 +37,7 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(event.request)
         .catch(() => {
-          return caches.match('index.html');
+          return caches.match('./index.html');
         })
     );
     return;
