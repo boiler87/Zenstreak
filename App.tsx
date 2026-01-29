@@ -64,7 +64,7 @@ import { getMotivation, getStreakForecast, getMilestoneCelebration } from './ser
 type User = any;
 
 // --- Constants ---
-const APP_VERSION = "3.7.0";
+const APP_VERSION = "3.7.1";
 const MILLIS_PER_DAY = 1000 * 60 * 60 * 24;
 
 // --- Gamification Data Structures (Non-Electrical) ---

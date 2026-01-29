@@ -7,8 +7,8 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
-    // Changed from '/' to './' to support custom domains and subdirectories
-    base: './', 
+    // Using root base path is standard for custom domains (e.g. https://app.com/)
+    base: '/', 
     build: {
       outDir: 'dist',
       emptyOutDir: true,

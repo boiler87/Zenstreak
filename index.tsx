@@ -2,22 +2,41 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 
-const VERSION = "3.7.0";
+const VERSION = "3.7.1";
 
 // --- SERVICE WORKER REGISTRATION ---
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    try {
-      // Register SW with a relative path
-      navigator.serviceWorker.register('sw.js')
-        .then(registration => {
-          console.log(`[Streaker v${VERSION}] SW Registered:`, registration.scope);
-        })
-        .catch(error => {
-          console.warn(`[Streaker v${VERSION}] SW Registration Failed:`, error.message);
-        });
-    } catch (err) {
-      console.warn(`[Streaker v${VERSION}] SW Registration blocked:`, err);
+    navigator.serviceWorker.register('/sw.js')
+      .then(registration => {
+        console.log(`[Streaker v${VERSION}] SW Registered:`, registration.scope);
+        
+        // Check for updates
+        registration.onupdatefound = () => {
+          const installingWorker = registration.installing;
+          if (installingWorker == null) return;
+          installingWorker.onstatechange = () => {
+            if (installingWorker.state === 'installed') {
+              if (navigator.serviceWorker.controller) {
+                console.log('New content is available; please refresh.');
+              } else {
+                console.log('Content is cached for offline use.');
+              }
+            }
+          };
+        };
+      })
+      .catch(error => {
+        console.warn(`[Streaker v${VERSION}] SW Registration Failed:`, error.message);
+      });
+  });
+
+  // Reload page when a new service worker takes control
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!refreshing) {
+      window.location.reload();
+      refreshing = true;
     }
   });
 }
