@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { SOURCE_MATERIAL } from "./knowledgeBase";
 import { StreakHistoryItem, ForecastResponse, CelebrationResponse } from "../types";
@@ -12,20 +13,23 @@ const getApiKey = (): string => {
   return FALLBACK_KEY;
 };
 
-export const getMotivation = async (days: number, goal: number): Promise<string> => {
+export const getMotivation = async (days: number, goal: number, whyStatement?: string): Promise<string> => {
   const apiKey = getApiKey();
   if (!apiKey) return "Focus on the growth that comes from discipline.";
 
   try {
     const ai = new GoogleGenAI({ apiKey });
+    const personalContext = whyStatement ? `THE USER'S PERSONAL INTENT (THE "WHY"): "${whyStatement}"` : "";
     const prompt = `
       You are an intense growth mentor based on the philosophy in the SOURCE MATERIAL.
       MATERIAL: ${SOURCE_MATERIAL}
       USER STATUS: Day ${days} of ${goal}. 
+      ${personalContext}
 
       TASK:
       Generate 1 powerful, short motivational sentence (max 15 words). 
-      IMPORTANT: Avoid all metaphors to electricity, grids, voltage, or wiring. Use general terms like 'focus', 'mastery', 'discipline', 'intensity', 'clarity', and 'growth'.
+      IMPORTANT: If the user provided their personal intent, incorporate its themes to make it hyper-personal.
+      Avoid all metaphors to electricity, grids, voltage, or wiring. Use general terms like 'focus', 'mastery', 'discipline', 'intensity', 'clarity', and 'growth'.
     `;
 
     const response = await ai.models.generateContent({
@@ -45,17 +49,19 @@ export const getMotivation = async (days: number, goal: number): Promise<string>
   } catch (e) { return "True strength is found in discipline."; }
 };
 
-export const getStreakForecast = async (history: StreakHistoryItem[], currentDays: number, goal: number): Promise<ForecastResponse> => {
+export const getStreakForecast = async (history: StreakHistoryItem[], currentDays: number, goal: number, whyStatement?: string): Promise<ForecastResponse> => {
   const apiKey = getApiKey();
   if (!apiKey) return { prediction: "Maintain your focus.", confidenceLevel: "Medium", insight: "Growth is a process." };
 
   try {
     const ai = new GoogleGenAI({ apiKey });
+    const personalContext = whyStatement ? `THE USER'S CORE INTENT: "${whyStatement}"` : "";
     const prompt = `
       Analyze this user's progress and provide a forecast based on the philosophy in the SOURCE MATERIAL: ${SOURCE_MATERIAL}. 
       Current Progress: ${currentDays} days, Goal: ${goal} days.
+      ${personalContext}
       
-      IMPORTANT: Do not use electrical, grid, or wiring metaphors. Use terms related to psychological resilience and personal mastery.
+      IMPORTANT: Use the Core Intent to tailor the advice. Do not use electrical, grid, or wiring metaphors. Use terms related to psychological resilience and personal mastery.
     `;
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',

@@ -36,7 +36,9 @@ import {
   Crown,
   Info,
   Award,
-  HelpCircle
+  HelpCircle,
+  Zap,
+  Quote
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -62,7 +64,7 @@ import { getMotivation, getStreakForecast, getMilestoneCelebration } from './ser
 type User = any;
 
 // --- Constants ---
-const APP_VERSION = "3.6.8";
+const APP_VERSION = "3.7.0";
 const MILLIS_PER_DAY = 1000 * 60 * 60 * 24;
 
 // --- Gamification Data Structures (Non-Electrical) ---
@@ -74,6 +76,14 @@ const RANK_METADATA = [
   { level: 5, name: "Clarity", factor: 0.65, color: "#d97706", icon: Sparkles },
   { level: 6, name: "Ascendant", factor: 0.85, color: "#d4af37", icon: Crown },
   { level: 7, name: "Mastery", factor: 1.0, color: "#000000", icon: Trophy },
+];
+
+const MASTERY_STAGES = [
+  { id: 1, name: "Default", threshold: 0, description: "Rushing toward the conclusion. Little management." },
+  { id: 2, name: "Voluntary", threshold: 0.1, description: "Gaining control over timing. Savoring the plateau." },
+  { id: 3, name: "Optional", threshold: 0.3, description: "Realizing release is optional. Finding the afterglow." },
+  { id: 4, name: "Exclusionary", threshold: 0.6, description: "Deriving more pleasure from denial than release." },
+  { id: 5, name: "Transcendent", threshold: 0.9, description: "Mind and body fully adapted. Perpetual arousal and satisfaction." },
 ];
 
 const Logo = ({ className = "w-8 h-8" }: { className?: string }) => (
@@ -180,6 +190,66 @@ const StreakProgress = ({ start, goal, currentRank }: { start: number; goal: num
   );
 };
 
+// --- Zone Depth Gauge Component ---
+const ZoneDepthGauge = ({ days, goal }: { days: number, goal: number }) => {
+  const ratio = days / goal;
+  const currentStage = [...MASTERY_STAGES].reverse().find(s => ratio >= s.threshold) || MASTERY_STAGES[0];
+  const [showInfo, setShowInfo] = useState<number | null>(null);
+
+  return (
+    <div className="bg-surface border border-slate-200 rounded-[32px] p-6 shadow-sm overflow-hidden flex flex-col gap-4">
+      <div className="flex justify-between items-center">
+        <div className="flex items-center gap-2">
+          <Activity size={16} className="text-primary" />
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Zone Depth Gauge</span>
+        </div>
+        <span className="text-[10px] font-black text-primary uppercase tracking-widest bg-primary/10 px-2 py-1 rounded-lg">
+          Stage {currentStage.id}: {currentStage.name}
+        </span>
+      </div>
+
+      <div className="relative h-16 flex items-center px-2">
+        {/* Background Track */}
+        <div className="absolute left-0 right-0 h-1 bg-slate-100 rounded-full" />
+        
+        {/* Progress Fill */}
+        <div 
+          className="absolute left-0 h-1 bg-primary rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(212,175,55,0.4)]"
+          style={{ width: `${Math.min(100, ratio * 100)}%` }}
+        />
+
+        {/* Stage Markers */}
+        {MASTERY_STAGES.map((stage) => {
+          const isActive = ratio >= stage.threshold;
+          const isCurrent = currentStage.id === stage.id;
+          return (
+            <button 
+              key={stage.id} 
+              onClick={() => setShowInfo(showInfo === stage.id ? null : stage.id)}
+              className="absolute group flex flex-col items-center -translate-x-1/2 transition-all"
+              style={{ left: `${stage.threshold * 100}%` }}
+            >
+              <div className={`w-3 h-3 rounded-full border-2 transition-all ${isActive ? 'bg-primary border-white scale-110 shadow-sm' : 'bg-white border-slate-200 group-hover:border-primary/50'}`} />
+              <span className={`text-[8px] mt-2 font-black uppercase tracking-tighter transition-all ${isActive ? 'text-text' : 'text-slate-300'}`}>
+                {stage.name}
+              </span>
+
+              {/* Tooltip Overlay */}
+              {showInfo === stage.id && (
+                <div className="absolute top-[-85px] w-40 bg-text text-white p-3 rounded-xl shadow-xl z-50 text-left animate-fade-in border border-white/10">
+                   <p className="text-[9px] font-black uppercase text-primary mb-1">Stage {stage.id}</p>
+                   <p className="text-[10px] font-bold leading-tight opacity-90">{stage.description}</p>
+                   <div className="absolute bottom-[-5px] left-1/2 -translate-x-1/2 w-2 h-2 bg-text rotate-45"></div>
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 // Detect iOS
 const isIOS = () => {
   return /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
@@ -236,8 +306,9 @@ export default function App() {
   const [celebration, setCelebration] = useState<CelebrationResponse | null>(null);
   const [isCelebrating, setIsCelebrating] = useState(false);
 
-  // Username feature state
+  // Personalization state
   const [tempUsername, setTempUsername] = useState("");
+  const [tempWhy, setTempWhy] = useState("");
 
   // Focus Score Info state
   const [showFocusScoreInfo, setShowFocusScoreInfo] = useState(false);
@@ -294,6 +365,7 @@ export default function App() {
         setData(fetched);
         setTempGoal(fetched.goal.toString());
         setTempUsername(fetched.username || "");
+        setTempWhy(fetched.whyStatement || "");
         const targetDate = new Date((fetched.currentStreakStart || Date.now()) + fetched.goal * MILLIS_PER_DAY);
         setTempGoalDate(toLocalDateString(targetDate.getTime()));
       } catch (e) {
@@ -380,8 +452,8 @@ export default function App() {
     
     try {
       const [motMsg, foreData] = await Promise.all([
-        getMotivation(currentDays, data.goal),
-        getStreakForecast(data.history, currentDays, data.goal)
+        getMotivation(currentDays, data.goal, data.whyStatement),
+        getStreakForecast(data.history, currentDays, data.goal, data.whyStatement)
       ]);
       if (motMsg) setMotivation(motMsg);
       if (foreData) setForecast(foreData);
@@ -486,9 +558,9 @@ export default function App() {
     setIsEditingGoal(false);
   };
 
-  const handleUsernameSubmit = async () => {
+  const handleIdentitySubmit = async () => {
     if (!data) return;
-    const newData = { ...data, username: tempUsername };
+    const newData = { ...data, username: tempUsername, whyStatement: tempWhy };
     setData(newData);
     await saveUserData(user, newData);
   };
@@ -700,6 +772,20 @@ export default function App() {
       <main className="max-w-md mx-auto w-full px-6 flex flex-col gap-6">
         {view === 'dashboard' && data && (
           <div className="animate-fade-in flex flex-col gap-6">
+            {/* Core Intent Display */}
+            {data.whyStatement && (
+              <div className="bg-text text-white p-6 rounded-[32px] shadow-lg relative overflow-hidden group">
+                 <Quote size={40} className="absolute bottom-[-10px] right-[-10px] text-white/5 group-hover:text-white/10 transition-colors" />
+                 <div className="flex items-center gap-2 mb-3">
+                   <Target size={14} className="text-primary" />
+                   <span className="text-[10px] font-black uppercase tracking-widest text-primary/80">Core Intent</span>
+                 </div>
+                 <p className="text-sm font-bold italic leading-relaxed opacity-90 pr-6">
+                   "{data.whyStatement}"
+                 </p>
+              </div>
+            )}
+
             <div className="bg-surface rounded-[40px] p-6 flex flex-col items-center justify-center shadow-xl shadow-slate-200/50 border border-slate-100 relative overflow-hidden">
                
                <StreakProgress start={data.currentStreakStart || Date.now()} goal={data.goal} currentRank={currentRank} />
@@ -789,6 +875,9 @@ export default function App() {
                   </button>
                </div>
             </div>
+
+            {/* Zone Depth Gauge implementation */}
+            <ZoneDepthGauge days={currentDays} goal={data.goal} />
 
             <div className="bg-surface border border-slate-200 rounded-3xl p-6 shadow-sm relative overflow-hidden">
                <div className="flex justify-between items-start mb-6">
@@ -963,25 +1052,35 @@ export default function App() {
             
             <div className="bg-surface p-6 rounded-3xl border border-slate-200 shadow-sm">
                <h3 className="text-[10px] font-black mb-4 text-secondary uppercase tracking-widest flex items-center gap-2">
-                 <Smile size={14} className="text-primary" /> Identity
+                 <Smile size={14} className="text-primary" /> Identity & Intent
                </h3>
-               <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Callsign</label>
-                  <div className="flex gap-2">
+               <div className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-2">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Callsign</label>
                     <input 
                       type="text" 
                       placeholder="e.g. Operator" 
                       value={tempUsername} 
                       onChange={(e) => setTempUsername(e.target.value)}
-                      className="flex-1 bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
+                      className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
                     />
-                    <button 
-                      onClick={handleUsernameSubmit}
-                      className="bg-primary text-white px-6 py-3 rounded-2xl font-black text-xs hover:bg-primary/90 active:scale-95 transition-all"
-                    >
-                      Save
-                    </button>
                   </div>
+                  <div className="flex flex-col gap-2">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Personal Intent (The "Why")</label>
+                    <textarea 
+                      placeholder="e.g. To reclaim absolute focus and mastery over biology." 
+                      value={tempWhy} 
+                      onChange={(e) => setTempWhy(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none min-h-[100px] resize-none"
+                    />
+                    <p className="text-[9px] font-medium text-slate-400 px-1">This grounds your journey and hyper-personalizes AI motivation.</p>
+                  </div>
+                  <button 
+                    onClick={handleIdentitySubmit}
+                    className="w-full bg-primary text-white py-4 rounded-2xl font-black text-xs hover:bg-primary/90 active:scale-95 transition-all shadow-lg shadow-primary/20"
+                  >
+                    Save Identity
+                  </button>
                </div>
             </div>
 

@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 
-const VERSION = "3.6.8";
+const VERSION = "3.7.0";
 
 // --- SERVICE WORKER REGISTRATION ---
 if ('serviceWorker' in navigator) {

@@ -12,6 +12,7 @@ export interface UserData {
   history: StreakHistoryItem[];
   uid?: string;
   username?: string; 
+  whyStatement?: string; // The user's "Why" or Core Intent
   showMotivation?: boolean;
   totalEvents?: number; // Lifetime count of events
   celebratedMilestones?: string[]; // IDs of milestones already celebrated
