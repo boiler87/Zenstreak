@@ -1,4 +1,4 @@
-const CACHE_NAME = 'streaker-v3.7.1';
+const CACHE_NAME = 'streaker-v3.8.0';
 const urlsToCache = [
   '/',
   '/index.html',

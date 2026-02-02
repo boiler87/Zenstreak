@@ -37,7 +37,6 @@ import {
   Info,
   Award,
   HelpCircle,
-  Zap,
   Quote
 } from 'lucide-react';
 import { 
@@ -50,7 +49,7 @@ import {
   Cell 
 } from 'recharts';
 
-import { UserData, StreakHistoryItem, ForecastResponse, CelebrationResponse } from './types';
+import { UserData, StreakHistoryItem } from './types';
 import { 
   getUserData, 
   saveUserData,
@@ -58,13 +57,12 @@ import {
   signInWithGoogle,
   logout,
 } from './services/firebase';
-import { getMotivation, getStreakForecast, getMilestoneCelebration } from './services/geminiService';
 
 // Define User type as any to handle missing exports in environment
 type User = any;
 
 // --- Constants ---
-const APP_VERSION = "3.7.1";
+const APP_VERSION = "3.8.0";
 const MILLIS_PER_DAY = 1000 * 60 * 60 * 24;
 
 // --- Gamification Data Structures (Non-Electrical) ---
@@ -269,11 +267,6 @@ export default function App() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [isRedirecting, setIsRedirecting] = useState(false);
 
-  const [motivation, setMotivation] = useState<string>("True strength is found in discipline.");
-  const [forecast, setForecast] = useState<ForecastResponse | null>(null);
-  const [loadingMotivation, setLoadingMotivation] = useState(false);
-  const [loadingForecast, setLoadingForecast] = useState(false);
-  
   const [isEditingGoal, setIsEditingGoal] = useState(false);
   const [goalMode, setGoalMode] = useState<'days' | 'date'>('days');
   const [tempGoal, setTempGoal] = useState("30");
@@ -301,10 +294,6 @@ export default function App() {
 
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [selectedDayDetails, setSelectedDayDetails] = useState<{date: string, statuses: string[], details: string[]} | null>(null);
-
-  // Milestone Celebration State
-  const [celebration, setCelebration] = useState<CelebrationResponse | null>(null);
-  const [isCelebrating, setIsCelebrating] = useState(false);
 
   // Personalization state
   const [tempUsername, setTempUsername] = useState("");
@@ -409,68 +398,6 @@ export default function App() {
     const target = new Date((data.currentStreakStart || Date.now()) + data.goal * MILLIS_PER_DAY);
     return target.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   }, [data]);
-
-  // Milestone check logic
-  useEffect(() => {
-    if (!data || loading) return;
-
-    const milestones = [
-      { id: `goal_${data.goal}`, name: 'Target Threshold Hit', condition: currentDays >= data.goal },
-      { id: `rank_${currentRank.name}`, name: `Rank Attained: ${currentRank.name}`, condition: currentRank.level > 1 },
-      { id: 'days_7', name: '7 Days Focused', condition: currentDays >= 7 },
-      { id: 'days_14', name: '14 Days Focused', condition: currentDays >= 14 },
-      { id: 'days_30', name: '30 Days Focused', condition: currentDays >= 30 },
-      { id: 'days_50', name: '50 Days Focused', condition: currentDays >= 50 },
-      { id: 'days_90', name: '90 Days Focused', condition: currentDays >= 90 },
-      { id: 'days_100', name: '100 Days Focused', condition: currentDays >= 100 },
-    ];
-
-    const uncelebrated = milestones.find(m => m.condition && !(data.celebratedMilestones || []).includes(m.id));
-
-    if (uncelebrated) {
-      const triggerCelebration = async () => {
-        const res = await getMilestoneCelebration(uncelebrated.name, currentDays, currentRank.name);
-        setCelebration(res);
-        setIsCelebrating(true);
-        
-        // Save milestone as celebrated
-        const newData = {
-          ...data,
-          celebratedMilestones: [...(data.celebratedMilestones || []), uncelebrated.id]
-        };
-        setData(newData);
-        saveUserData(user, newData);
-      };
-      triggerCelebration();
-    }
-  }, [currentDays, currentRank.name, data, loading, user]);
-
-  const handleFetchInsights = useCallback(async () => {
-    if (!data) return;
-    setLoadingMotivation(true);
-    setLoadingForecast(true);
-    
-    try {
-      const [motMsg, foreData] = await Promise.all([
-        getMotivation(currentDays, data.goal, data.whyStatement),
-        getStreakForecast(data.history, currentDays, data.goal, data.whyStatement)
-      ]);
-      if (motMsg) setMotivation(motMsg);
-      if (foreData) setForecast(foreData);
-    } catch (e) {
-      console.error("AI Insight Error", e);
-      setMotivation("Focus on the growth that comes from discipline.");
-    } finally {
-      setLoadingMotivation(false);
-      setLoadingForecast(false);
-    }
-  }, [data, currentDays]);
-
-  useEffect(() => {
-    if (data && !loading) {
-        handleFetchInsights();
-    }
-  }, [data, loading, currentDays]);
 
   const handleSignIn = async () => {
     setAuthError(null);
@@ -702,15 +629,6 @@ export default function App() {
     return formatted;
   }, [data, currentDays]);
 
-  const getConfidenceColor = (conf: string) => {
-    switch(conf?.toLowerCase()) {
-      case 'high': return 'bg-emerald-100 text-emerald-800 border-emerald-200';
-      case 'medium': return 'bg-amber-100 text-amber-800 border-amber-200';
-      case 'low': return 'bg-red-100 text-red-800 border-red-200';
-      default: return 'bg-slate-100 text-slate-800 border-slate-200';
-    }
-  };
-
   if (loading) return <div className="h-screen w-full bg-background flex items-center justify-center"><LoadingSpinner /></div>;
 
   return (
@@ -879,50 +797,27 @@ export default function App() {
             {/* Zone Depth Gauge implementation */}
             <ZoneDepthGauge days={currentDays} goal={data.goal} />
 
-            <div className="bg-surface border border-slate-200 rounded-3xl p-6 shadow-sm relative overflow-hidden">
-               <div className="flex justify-between items-start mb-6">
-                 <div className="flex items-center gap-2">
-                   <Sparkles size={16} className="text-primary" />
-                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Daily Insight</span>
-                 </div>
-                 <div className="flex items-center gap-2">
-                   {forecast && !loadingForecast && (
-                      <div className={`text-[8px] font-black px-2 py-1 rounded-lg border uppercase tracking-widest ${getConfidenceColor(forecast.confidenceLevel)}`}>
-                         {forecast.confidenceLevel} Path
-                      </div>
-                   )}
-                   <button onClick={handleFetchInsights} disabled={loadingMotivation || loadingForecast} className="text-slate-300 hover:text-primary p-1 transition-colors">
-                     <RefreshCw size={14} className={loadingMotivation || loadingForecast ? "animate-spin" : ""} />
-                   </button>
-                 </div>
-               </div>
-               <div className="mb-6 relative z-10">
-                 <p className="text-lg font-bold text-text leading-snug italic">
-                   {loadingMotivation ? <span className="flex items-center gap-2 text-slate-300 text-sm"><Loader2 size={14} className="animate-spin" /> Querying the Source...</span> : `"${motivation}"`}
-                 </p>
-               </div>
-               <div className="w-full h-px bg-slate-100 mb-4"></div>
-               <div className="flex flex-col gap-3">
-                   <div className="flex items-center gap-2 mb-1">
-                     <TrendingUp size={12} className="text-secondary" />
-                     <span className="text-[9px] font-black text-secondary uppercase tracking-widest">Growth Trajectory</span>
-                   </div>
-                   {loadingForecast ? (
-                     <div className="flex items-center gap-2 text-slate-300 text-xs font-bold">
-                       <Loader2 size={12} className="animate-spin" /> Analyzing patterns...
-                     </div>
-                   ) : (
-                     <>
-                       <p className="text-sm font-semibold text-slate-700 leading-relaxed">{forecast?.prediction || "Maintain focus to secure your progress."}</p>
-                       {forecast?.insight && (
-                          <div className="bg-slate-50 rounded-xl p-3 flex gap-3 items-start border border-slate-100 mt-1">
-                             <Lightbulb size={14} className="text-amber-500 shrink-0 mt-0.5" />
-                             <p className="text-xs font-medium text-slate-500">{forecast.insight}</p>
-                          </div>
-                       )}
-                     </>
-                   )}
-               </div>
+            {/* Summary Statistics Card */}
+            <div className="bg-surface border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col gap-4">
+              <div className="flex items-center gap-2">
+                <TrendingUp size={16} className="text-primary" />
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Journey Metrics</span>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col">
+                  <span className="text-[9px] font-black text-secondary uppercase">Lifetime Gained</span>
+                  <span className="text-xl font-black text-text">{stats.totalDays} Days</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[9px] font-black text-secondary uppercase">Average Length</span>
+                  <span className="text-xl font-black text-text">{stats.avgStreak} Days</span>
+                </div>
+              </div>
+              <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+                <p className="text-xs font-medium text-slate-500 leading-relaxed">
+                  Your current rank is <strong className="text-text">{currentRank.name}</strong>. Maintain your presence to move toward Stage 5 Transcendent Mastery.
+                </p>
+              </div>
             </div>
           </div>
         )}
@@ -1073,7 +968,7 @@ export default function App() {
                       onChange={(e) => setTempWhy(e.target.value)}
                       className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none min-h-[100px] resize-none"
                     />
-                    <p className="text-[9px] font-medium text-slate-400 px-1">This grounds your journey and hyper-personalizes AI motivation.</p>
+                    <p className="text-[9px] font-medium text-slate-400 px-1">This grounds your journey and provides internal motivation.</p>
                   </div>
                   <button 
                     onClick={handleIdentitySubmit}
@@ -1127,35 +1022,6 @@ export default function App() {
           </div>
         )}
       </main>
-
-      {/* Milestone Celebration Modal */}
-      {isCelebrating && celebration && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-6 animate-fade-in">
-           <div className="bg-white rounded-[40px] p-10 max-w-sm w-full shadow-2xl relative text-center flex flex-col items-center">
-              <div className="absolute top-[-40px] p-6 bg-primary text-white rounded-full shadow-xl shadow-primary/30 border-4 border-white">
-                <Trophy size={48} />
-              </div>
-              <h2 className="text-3xl font-black text-text mt-8 mb-2">{celebration.title}</h2>
-              <div className="w-12 h-1 bg-primary rounded-full mb-6"></div>
-              <p className="text-lg font-bold text-slate-700 leading-relaxed italic mb-8">
-                "{celebration.message}"
-              </p>
-              <div className="w-full bg-slate-50 p-6 rounded-3xl border border-slate-100 flex flex-col gap-2">
-                 <div className="flex items-center justify-center gap-2 mb-1">
-                   <Crown size={14} className="text-primary" />
-                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Mastery Insight</span>
-                 </div>
-                 <p className="text-xs font-semibold text-slate-500">{celebration.rankInsight}</p>
-              </div>
-              <button 
-                onClick={() => setIsCelebrating(false)} 
-                className="w-full py-4 bg-primary text-white rounded-2xl font-black text-sm mt-8 shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
-              >
-                Continue The Path
-              </button>
-           </div>
-        </div>
-      )}
 
       {/* Selected Day Details Modal */}
       {selectedDayDetails && (
@@ -1238,7 +1104,7 @@ export default function App() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6 animate-fade-in">
           <div className="bg-white rounded-[32px] p-8 max-w-sm w-full shadow-2xl">
             <h3 className="text-2xl font-black mb-4 text-center text-danger">Relapse?</h3>
-            <p className="text-slate-500 text-sm mb-8 text-center leading-relaxed">Discipline lapsed. Re-centering the system. History will be archived for re-analysis.</p>
+            <p className="text-slate-500 text-sm mb-8 text-center leading-relaxed">Discipline lapsed. Re-centering the system. History will be archived.</p>
             <div className="flex gap-3"><button onClick={() => setShowResetConfirm(false)} className="flex-1 p-4 bg-slate-100 rounded-2xl font-bold">Cancel</button><button onClick={handleReset} className="flex-1 p-4 bg-danger text-white rounded-2xl font-black">Confirm Relapse</button></div>
           </div>
         </div>
