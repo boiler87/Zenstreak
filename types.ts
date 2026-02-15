@@ -1,5 +1,4 @@
 
-
 export interface StreakHistoryItem {
   id: string;
   startDate: number; // timestamp
@@ -19,10 +18,14 @@ export interface UserData {
   celebratedMilestones?: string[]; // IDs of milestones already celebrated
 }
 
-// Fix: Added missing interfaces for Gemini service responses to resolve module export errors
+export interface MotivationResponse {
+  message: string;
+  author?: string;
+}
+
 export interface ForecastResponse {
   prediction: string;
-  confidenceLevel: "High" | "Medium" | "Low";
+  confidenceLevel: 'High' | 'Medium' | 'Low';
   insight: string;
 }
 

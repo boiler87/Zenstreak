@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="version" content="3.8.0" />
+    <meta name="version" content="3.7.0" />
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
@@ -17,7 +17,7 @@
     <!-- Embedded SVG Logo as Icon for max compatibility -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg viewBox='0 0 512 512' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M166 182C128.5 182 98 212.5 98 250C98 287.5 128.5 318 166 318C189.5 318 211 306 224 286L288 226C301 206 322.5 194 346 194C383.5 194 414 224.5 414 262C414 299.5 383.5 330 346 330C322.5 330 301 318 288 298L224 238C211 218 189.5 206 166 206C142.5 206 122 226.5 122 250C122 273.5 142.5 294 166 294' stroke='%23d4af37' stroke-width='28' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ctext x='50%25' y='52%25' dominant-baseline='middle' text-anchor='middle' fill='black' font-size='72' font-weight='900' font-family='sans-serif'%3EStreaker%3C/text%3E%3C/svg%3E" />
     <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg viewBox='0 0 512 512' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='512' height='512' fill='white'/%3E%3Cpath d='M166 182C128.5 182 98 212.5 98 250C98 287.5 128.5 318 166 318C189.5 318 211 306 224 286L288 226C301 206 322.5 194 346 194C383.5 194 414 224.5 414 262C414 299.5 383.5 330 346 330C322.5 330 301 318 288 298L224 238C211 218 189.5 206 166 206C142.5 206 122 226.5 122 250C122 273.5 142.5 294 166 294' stroke='%23d4af37' stroke-width='28' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ctext x='50%25' y='52%25' dominant-baseline='middle' text-anchor='middle' fill='black' font-size='72' font-weight='900' font-family='sans-serif'%3EStreaker%3C/text%3E%3C/svg%3E" />
-    <link rel="manifest" href="/manifest.json" />
+    <link rel="manifest" href="manifest.json" />
 
     <title>Streaker</title>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -58,24 +58,25 @@
   <script type="importmap">
 {
   "imports": {
-    "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
-    "@google/genai": "https://esm.sh/@google/genai@^1.38.0",
-    "vite": "https://esm.sh/vite@^7.3.1",
+    "react": "https://esm.sh/react@18.2.0",
+    "react/": "https://esm.sh/react@18.2.0/",
+    "react-dom": "https://esm.sh/react-dom@18.2.0",
+    "react-dom/": "https://esm.sh/react-dom@18.2.0/",
+    "@google/genai": "https://esm.sh/@google/genai@1.37.0",
+    "lucide-react": "https://esm.sh/lucide-react@0.344.0?external=react",
+    "recharts": "https://esm.sh/recharts@2.12.0?external=react,react-dom",
     "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
-    "recharts": "https://esm.sh/recharts@^3.7.0",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-    "react/": "https://esm.sh/react@^19.2.4/",
-    "react": "https://esm.sh/react@^19.2.4",
-    "express": "https://esm.sh/express@^5.2.1",
-    "url": "https://esm.sh/url@^0.11.4",
+    "vite": "https://esm.sh/vite@^7.3.1",
+    "firebase/": "https://esm.sh/firebase@^12.8.0/",
     "path": "https://esm.sh/path@^0.12.7",
-    "firebase/": "https://esm.sh/firebase@^12.8.0/"
+    "url": "https://esm.sh/url@^0.11.4",
+    "express": "https://esm.sh/express@^5.2.1"
   }
 }
 </script>
 </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
+    <script type="module" src="./index.tsx"></script>
   </body>
 </html>

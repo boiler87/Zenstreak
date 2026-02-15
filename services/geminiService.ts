@@ -3,12 +3,22 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { SOURCE_MATERIAL } from "./knowledgeBase";
 import { StreakHistoryItem, ForecastResponse, CelebrationResponse } from "../types";
 
-// Fix: Removed FALLBACK_KEY and getApiKey helper. Guidelines require exclusive use of process.env.API_KEY.
+const FALLBACK_KEY = "AIzaSyDygmVHR9CQaC-00NZHFcWxQh1Gw6-N0eg";
+
+const getApiKey = (): string => {
+  const key = process.env.API_KEY;
+  if (key && key.length > 0 && key !== 'undefined') {
+    return key;
+  }
+  return FALLBACK_KEY;
+};
 
 export const getMotivation = async (days: number, goal: number, whyStatement?: string): Promise<string> => {
+  const apiKey = getApiKey();
+  if (!apiKey) return "Focus on the growth that comes from discipline.";
+
   try {
-    // Fix: Initialize GoogleGenAI directly with process.env.API_KEY in the function scope
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey });
     const personalContext = whyStatement ? `THE USER'S PERSONAL INTENT (THE "WHY"): "${whyStatement}"` : "";
     const prompt = `
       You are an intense growth mentor based on the philosophy in the SOURCE MATERIAL.
@@ -32,23 +42,19 @@ export const getMotivation = async (days: number, goal: number, whyStatement?: s
         responseSchema: {
           type: Type.OBJECT,
           properties: { message: { type: Type.STRING } },
-          required: ["message"]
         }
       }
     });
-    // Fix: response.text is a property, not a method. Using it directly.
-    const jsonStr = response.text || "{}";
-    return JSON.parse(jsonStr).message || "Focus on the growth that comes from discipline.";
-  } catch (e) { 
-    console.error("Gemini Motivation Error:", e);
-    return "True strength is found in discipline."; 
-  }
+    return JSON.parse(response.text).message;
+  } catch (e) { return "True strength is found in discipline."; }
 };
 
 export const getStreakForecast = async (history: StreakHistoryItem[], currentDays: number, goal: number, whyStatement?: string): Promise<ForecastResponse> => {
+  const apiKey = getApiKey();
+  if (!apiKey) return { prediction: "Maintain your focus.", confidenceLevel: "Medium", insight: "Growth is a process." };
+
   try {
-    // Fix: Initialize GoogleGenAI directly with process.env.API_KEY
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey });
     const personalContext = whyStatement ? `THE USER'S CORE INTENT: "${whyStatement}"` : "";
     const prompt = `
       Analyze this user's progress and provide a forecast based on the philosophy in the SOURCE MATERIAL: ${SOURCE_MATERIAL}. 
@@ -74,18 +80,16 @@ export const getStreakForecast = async (history: StreakHistoryItem[], currentDay
         }
       }
     });
-    // Fix: accessing text as a property
-    return JSON.parse(response.text || "{}") as ForecastResponse;
-  } catch (e) { 
-    console.error("Gemini Forecast Error:", e);
-    return { prediction: "System stable.", confidenceLevel: "Medium", insight: "Stay committed to the path." }; 
-  }
+    return JSON.parse(response.text);
+  } catch (e) { return { prediction: "System stable.", confidenceLevel: "Medium", insight: "Stay committed to the path." }; }
 };
 
 export const getMilestoneCelebration = async (milestoneName: string, days: number, rankName: string): Promise<CelebrationResponse> => {
+  const apiKey = getApiKey();
+  if (!apiKey) return { title: "Milestone Reached", message: "Great job on your progress!", rankInsight: "Your discipline is growing." };
+
   try {
-    // Fix: Initialize GoogleGenAI directly with process.env.API_KEY
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey });
     const prompt = `
       The user has reached a major milestone: "${milestoneName}" at ${days} days. 
       Their current rank is "${rankName}".
@@ -118,10 +122,8 @@ export const getMilestoneCelebration = async (milestoneName: string, days: numbe
         }
       }
     });
-    // Fix: accessing text as a property
-    return JSON.parse(response.text || "{}") as CelebrationResponse;
+    return JSON.parse(response.text);
   } catch (e) {
-    console.error("Gemini Celebration Error:", e);
     return { title: "Strength Found", message: "You have reached a new level of discipline.", rankInsight: "Your path to mastery continues." };
   }
 };
