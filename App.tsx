@@ -64,7 +64,7 @@ import { getMotivation, getStreakForecast, getMilestoneCelebration } from './ser
 type User = any;
 
 // --- Constants ---
-const APP_VERSION = "3.7.2";
+const APP_VERSION = "3.7.0";
 const MILLIS_PER_DAY = 1000 * 60 * 60 * 24;
 
 // --- Gamification Data Structures (Non-Electrical) ---
@@ -614,15 +614,6 @@ export default function App() {
     setIsEditingHistory(null);
   };
 
-  const handleDeleteHistory = async (id: string) => {
-    if (!data) return;
-    if (!window.confirm("Are you sure you want to delete this entry?")) return;
-    const nextHistory = data.history.filter(i => i.id !== id);
-    const newData = {...data, history: nextHistory};
-    setData(newData);
-    await saveUserData(user, newData);
-  };
-
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
     const month = date.getMonth();
@@ -719,13 +710,6 @@ export default function App() {
       default: return 'bg-slate-100 text-slate-800 border-slate-200';
     }
   };
-
-  const NavButton = ({ active, onClick, icon: Icon, label }: any) => (
-    <button onClick={onClick} className={`flex flex-col items-center justify-center w-full p-2 rounded-2xl transition-all ${active ? 'text-primary bg-primary/5' : 'text-slate-400'}`}>
-      <Icon size={20} strokeWidth={active ? 3 : 2} />
-      <span className="text-[8px] font-black mt-1 uppercase">{label}</span>
-    </button>
-  );
 
   if (loading) return <div className="h-screen w-full bg-background flex items-center justify-center"><LoadingSpinner /></div>;
 
@@ -952,464 +936,328 @@ export default function App() {
                 <span className="text-[10px] font-black uppercase tracking-widest mr-1">Add Entry</span>
               </button>
             </div>
-            
-            {/* View Toggle Tabs */}
             <div className="flex bg-slate-100 p-1 rounded-2xl w-full">
-                <button onClick={() => setHistoryTab('list')} className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${historyTab === 'list' ? 'bg-white shadow-sm text-text' : 'text-slate-400'}`}>
-                  <ListIcon size={14} /> List
-                </button>
-                <button onClick={() => setHistoryTab('trends')} className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${historyTab === 'trends' ? 'bg-white shadow-sm text-text' : 'text-slate-400'}`}>
-                  <BarChart3 size={14} /> Trends
-                </button>
-                <button onClick={() => setHistoryTab('calendar')} className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${historyTab === 'calendar' ? 'bg-white shadow-sm text-text' : 'text-slate-400'}`}>
-                  <CalendarIcon size={14} /> Calendar
-                </button>
+                <button onClick={() => setHistoryTab('list')} className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${historyTab === 'list' ? 'bg-white shadow-sm text-primary' : 'text-secondary'}`}><ListIcon size={14} /> List</button>
+                <button onClick={() => setHistoryTab('trends')} className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${historyTab === 'trends' ? 'bg-white shadow-sm text-primary' : 'text-secondary'}`}><BarChart3 size={14} /> Trends</button>
+                <button onClick={() => setHistoryTab('calendar')} className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${historyTab === 'calendar' ? 'bg-white shadow-sm text-primary' : 'text-secondary'}`}><CalendarIcon size={14} /> Calendar</button>
             </div>
 
-            <div className="bg-surface rounded-3xl p-5 border border-slate-200 flex justify-between">
-               <div className="flex flex-col items-center gap-1 flex-1 border-r border-slate-100">
-                  <span className="text-2xl font-black">{stats.totalStreaks}</span>
-                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Attempts</span>
-               </div>
-               <div className="flex flex-col items-center gap-1 flex-1 border-r border-slate-100">
-                  <span className="text-2xl font-black">{stats.totalDays}</span>
-                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Clean Days</span>
-               </div>
-               <div className="flex flex-col items-center gap-1 flex-1">
-                  <span className="text-2xl font-black">{stats.avgStreak}</span>
-                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Avg Days</span>
-               </div>
-            </div>
-
-            <div className="relative min-h-[300px]">
-              {historyTab === 'list' && (
-                <div className="flex flex-col gap-3 pb-24">
-                  <div className="flex justify-end gap-2 mb-2">
-                    <button onClick={() => { setSortKey('endDate'); setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc'); }} className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-lg">
-                       Date {sortKey === 'endDate' && (sortOrder === 'asc' ? <ArrowUpNarrowWide size={12}/> : <ArrowDownWideNarrow size={12}/>)}
-                    </button>
-                    <button onClick={() => { setSortKey('days'); setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc'); }} className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-lg">
-                       Duration {sortKey === 'days' && (sortOrder === 'asc' ? <ArrowUpNarrowWide size={12}/> : <ArrowDownWideNarrow size={12}/>)}
-                    </button>
-                  </div>
-                  
-                  {sortedHistory.length === 0 ? (
-                    <div className="text-center py-10 text-slate-400 text-sm italic border-2 border-dashed border-slate-100 rounded-2xl">
-                       No past journeys recorded.
+            {historyTab === 'calendar' && (
+              <div className="animate-fade-in flex flex-col gap-4">
+                 <div className="bg-surface p-4 rounded-3xl border border-slate-200 shadow-sm">
+                    <div className="flex items-center justify-between mb-4 px-2">
+                       <button onClick={handlePrevMonth} className="p-2 text-slate-400 hover:text-primary hover:bg-slate-50 rounded-xl transition-colors"><ChevronLeft size={20} /></button>
+                       <span className="text-sm font-black uppercase tracking-widest text-text">{calendarDate.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</span>
+                       <button onClick={handleNextMonth} className="p-2 text-slate-400 hover:text-primary hover:bg-slate-50 rounded-xl transition-colors"><ChevronRight size={20} /></button>
                     </div>
-                  ) : (
-                    sortedHistory.map((streak) => (
-                      <div key={streak.id} className="bg-surface p-4 rounded-2xl border border-slate-200 flex justify-between items-center shadow-sm">
+                    <div className="grid grid-cols-7 gap-1 mb-2 text-center">{['S','M','T','W','T','F','S'].map((d,i) => <div key={i} className="text-[9px] font-bold text-slate-300">{d}</div>)}</div>
+                    <div className="grid grid-cols-7 gap-1">
+                       {Array.from({ length: getFirstDayOfMonth(calendarDate) }).map((_, i) => <div key={`empty-${i}`} className="aspect-square" />)}
+                       {getDaysInMonth(calendarDate).map(day => {
+                          const { isCurrent, isPast, isOverlap } = getDayStatus(calendarDate.getFullYear(), calendarDate.getMonth(), day);
+                          let bgClass = "bg-slate-50 text-slate-300";
+                          if (isOverlap) bgClass = "bg-gradient-to-br from-amber-200 to-emerald-200 text-slate-800 font-bold border border-slate-300";
+                          else if (isCurrent) bgClass = "bg-primary/10 text-primary font-bold border border-primary/20";
+                          else if (isPast) bgClass = "bg-amber-100 text-amber-900 font-bold border border-amber-200";
+                          const thisDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth(), day).getTime();
+                          if (thisDate > Date.now()) bgClass = "bg-transparent text-slate-200 opacity-50";
+                          return (
+                             <button key={day} onClick={() => handleDayClick(day)} disabled={thisDate > Date.now()} className={`aspect-square rounded-lg flex items-center justify-center text-xs transition-all relative ${bgClass} ${(isCurrent || isPast) ? 'hover:scale-105 shadow-sm' : ''}`}>
+                                {day}
+                                {isOverlap && <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-red-400 rounded-full" />}
+                             </button>
+                          );
+                       })}
+                    </div>
+                 </div>
+              </div>
+            )}
+
+            {historyTab === 'trends' && (
+              <div className="flex flex-col gap-4 animate-fade-in">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-surface p-4 rounded-3xl border border-slate-100 shadow-sm flex flex-col gap-1"><span className="text-[9px] font-black text-secondary uppercase tracking-widest">Total Days Gained</span><span className="text-2xl font-black text-primary">{stats.totalDays}</span></div>
+                  <div className="bg-surface p-4 rounded-3xl border border-slate-100 shadow-sm flex flex-col gap-1"><span className="text-[9px] font-black text-secondary uppercase tracking-widest">Avg Growth Length</span><span className="text-2xl font-black text-text">{stats.avgStreak}</span></div>
+                </div>
+                <div className="bg-surface p-6 rounded-3xl border border-slate-100 shadow-sm">
+                  <h3 className="text-[10px] font-black text-secondary uppercase tracking-widest mb-6 flex items-center gap-2"><BarChart3 size={14} className="text-primary" /> Mastery History</h3>
+                  <div className="h-64 w-full">
+                    {chartData.length > 1 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={chartData} margin={{ top: 0, right: 0, left: -25, bottom: 0 }}>
+                          <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 700, fill: '#94a3b8' }} dy={10}/>
+                          <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 700, fill: '#94a3b8' }} />
+                          <Tooltip cursor={{ fill: 'rgba(212, 175, 55, 0.05)' }} content={({ active, payload }) => {
+                              if (active && payload && payload.length) {
+                                return (
+                                  <div className="bg-white p-3 rounded-2xl shadow-xl border border-slate-100 text-xs font-bold">
+                                    <p className="text-secondary mb-1 uppercase tracking-tighter text-[10px]">{payload[0].payload.fullDate}</p>
+                                    <p className="text-primary">{payload[0].value} Days</p>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            }}
+                          />
+                          <Bar dataKey="days" radius={[6, 6, 6, 6]} barSize={20}>
+                            {chartData.map((entry, index) => <Cell key={`cell-${index}`} fill={index === chartData.length - 1 ? '#d4af37' : '#e2e8f0'} className="transition-all hover:fill-primary/80"/>)}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : <div className="h-full flex items-center justify-center text-slate-300 text-xs font-medium italic">Insufficient history for visualization</div>}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {historyTab === 'list' && (
+              <div className="flex flex-col gap-6 animate-fade-in">
+                {data.history.length > 0 && (
+                  <div className="flex items-center justify-between bg-surface p-2 rounded-2xl border border-slate-100 shadow-sm">
+                    <div className="flex gap-1">
+                      {['startDate', 'endDate', 'days'].map(key => (
+                        <button key={key} onClick={() => setSortKey(key as any)} className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${sortKey === key ? 'bg-primary text-white' : 'text-slate-400 bg-slate-50 hover:bg-slate-100'}`}>{key.replace('Date','')}</button>
+                      ))}
+                    </div>
+                    <button onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')} className="p-2 text-primary hover:bg-primary/5 rounded-xl transition-colors">{sortOrder === 'asc' ? <ArrowUpNarrowWide size={18} /> : <ArrowDownWideNarrow size={18} />}</button>
+                  </div>
+                )}
+                <div className="flex flex-col gap-3 pb-12">
+                  {data.history.length === 0 ? <div className="text-center py-10 text-slate-400 text-sm italic">The path is clear. Begin your journey.</div> : sortedHistory.map((streak) => (
+                      <div key={streak.id} className="bg-surface p-4 rounded-2xl border border-slate-200 flex justify-between items-center group hover:shadow-md transition-all">
                         <div className="flex flex-col">
-                          <div className="flex items-baseline gap-2">
-                            <span className="text-xl font-black text-text">{streak.days}</span>
-                            <span className="text-[10px] font-black text-secondary uppercase">Days</span>
-                          </div>
-                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide">
-                            {new Date(streak.startDate).toLocaleDateString(undefined, {month:'short', day:'numeric'})} - {new Date(streak.endDate).toLocaleDateString(undefined, {month:'short', day:'numeric', year:'numeric'})}
-                          </span>
+                          <div className="flex items-baseline gap-2"><span className="text-xl font-black text-text">{streak.days}</span><span className="text-[10px] font-black text-secondary uppercase">Days Mastered</span></div>
+                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">{new Date(streak.startDate).toLocaleDateString()} - {new Date(streak.endDate).toLocaleDateString()}</span>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <button 
-                            onClick={() => handleEditHistoryClick(streak)}
-                            className="p-2 text-slate-300 hover:text-primary hover:bg-slate-50 rounded-lg transition-all"
-                          >
-                            <Pencil size={16} />
-                          </button>
-                          <button 
-                            onClick={() => handleDeleteHistory(streak.id)} 
-                            className="p-2 text-slate-300 hover:text-danger hover:bg-red-50 rounded-lg transition-all"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                        <div className="flex gap-1">
+                          <button onClick={() => handleEditHistoryClick(streak)} className="p-2 text-slate-200 hover:text-primary transition-colors"><Pencil size={16} /></button>
+                          <button onClick={() => {
+                            const newData = { ...data, history: data.history.filter(item => item.id !== streak.id) };
+                            setData(newData);
+                            saveUserData(user, newData);
+                          }} className="p-2 text-slate-200 hover:text-danger transition-colors"><Trash2 size={16} /></button>
                         </div>
                       </div>
                     ))
-                  )}
+                  }
                 </div>
-              )}
-
-              {historyTab === 'trends' && (
-                <div className="bg-surface p-6 rounded-[32px] border border-slate-200 shadow-sm h-80 w-full animate-fade-in">
-                  <h3 className="text-sm font-black mb-6 uppercase tracking-widest text-slate-400">Recent Performance</h3>
-                  <ResponsiveContainer width="100%" height="85%">
-                    <BarChart data={chartData}>
-                      <XAxis 
-                        dataKey="name" 
-                        axisLine={false} 
-                        tickLine={false} 
-                        tick={{fontSize: 10, fill: '#94a3b8', fontWeight: 700}} 
-                        dy={10}
-                      />
-                      <Tooltip 
-                        cursor={{fill: '#f8fafc'}}
-                        content={({ active, payload }) => {
-                          if (active && payload && payload.length) {
-                            return (
-                              <div className="bg-text text-white p-3 rounded-xl text-xs shadow-xl">
-                                <p className="font-black mb-1">{payload[0].payload.fullDate}</p>
-                                <p className="font-bold text-primary">{payload[0].value} Days</p>
-                              </div>
-                            );
-                          }
-                          return null;
-                        }}
-                      />
-                      <Bar dataKey="days" radius={[6, 6, 6, 6]} barSize={20}>
-                        {chartData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.name === 'Now' ? '#d4af37' : '#cbd5e1'} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
-
-              {historyTab === 'calendar' && (
-                 <div className="bg-surface p-6 rounded-[32px] border border-slate-200 shadow-sm animate-fade-in">
-                    <div className="flex justify-between items-center mb-6">
-                       <button onClick={handlePrevMonth} className="p-2 hover:bg-slate-50 rounded-full"><ChevronLeft size={16} /></button>
-                       <span className="font-black text-sm uppercase tracking-widest">
-                          {calendarDate.toLocaleDateString(undefined, {month: 'long', year: 'numeric'})}
-                       </span>
-                       <button onClick={handleNextMonth} className="p-2 hover:bg-slate-50 rounded-full"><ChevronRight size={16} /></button>
-                    </div>
-                    <div className="grid grid-cols-7 gap-1 mb-2">
-                       {['S','M','T','W','T','F','S'].map(d => (
-                          <div key={d} className="text-center text-[10px] font-bold text-slate-300 py-2">{d}</div>
-                       ))}
-                    </div>
-                    <div className="grid grid-cols-7 gap-1">
-                       {Array.from({length: getFirstDayOfMonth(calendarDate)}).map((_, i) => <div key={`empty-${i}`} />)}
-                       {getDaysInMonth(calendarDate).map(day => {
-                          const status = getDayStatus(calendarDate.getFullYear(), calendarDate.getMonth(), day);
-                          let bgClass = "bg-slate-50 text-slate-400";
-                          if (status.isCurrent) bgClass = "bg-primary text-white shadow-md shadow-primary/30 font-bold scale-105";
-                          else if (status.isOverlap) bgClass = "bg-orange-400 text-white shadow-sm font-bold";
-                          else if (status.isPast) bgClass = "bg-slate-800 text-white shadow-sm font-bold";
-                          
-                          return (
-                             <button 
-                                key={day} 
-                                onClick={() => handleDayClick(day)}
-                                className={`aspect-square rounded-xl flex items-center justify-center text-xs transition-all ${bgClass}`}
-                             >
-                                {day}
-                             </button>
-                          )
-                       })}
-                    </div>
-                    
-                    {selectedDayDetails && (
-                       <div className="mt-6 bg-slate-50 p-4 rounded-2xl border border-slate-100 animate-fade-in">
-                          <div className="flex justify-between items-start mb-2">
-                             <h4 className="font-black text-xs uppercase tracking-widest text-text">{selectedDayDetails.date}</h4>
-                             <button onClick={() => setSelectedDayDetails(null)}><X size={14} className="text-slate-400" /></button>
-                          </div>
-                          <div className="flex flex-col gap-1">
-                             {selectedDayDetails.details.map((detail, idx) => (
-                                <div key={idx} className="flex items-center gap-2 text-[11px] font-medium text-slate-600">
-                                   <div className="w-1.5 h-1.5 rounded-full bg-primary"></div>
-                                   {detail}
-                                </div>
-                             ))}
-                          </div>
-                       </div>
-                    )}
-                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         )}
 
         {view === 'settings' && data && (
           <div className="animate-fade-in flex flex-col gap-6">
-            <h2 className="text-2xl font-black">Settings</h2>
+            <h2 className="text-2xl font-black text-text">Configuration</h2>
             
-            <div className="bg-surface p-6 rounded-[32px] border border-slate-200 shadow-sm">
-               <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-6 flex items-center gap-2">
-                 <UserIcon size={14} /> Identity
+            <div className="bg-surface p-6 rounded-3xl border border-slate-200 shadow-sm">
+               <h3 className="text-[10px] font-black mb-4 text-secondary uppercase tracking-widest flex items-center gap-2">
+                 <Smile size={14} className="text-primary" /> Identity & Intent
                </h3>
-               <div className="flex flex-col gap-5">
+               <div className="flex flex-col gap-4">
                   <div className="flex flex-col gap-2">
                     <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Callsign</label>
                     <input 
                       type="text" 
+                      placeholder="e.g. Operator" 
                       value={tempUsername} 
-                      onChange={(e) => setTempUsername(e.target.value)} 
-                      placeholder="Enter your name"
-                      className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold outline-none focus:border-primary/50 transition-colors" 
+                      onChange={(e) => setTempUsername(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
                     />
                   </div>
                   <div className="flex flex-col gap-2">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Core Intent (The Why)</label>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Personal Intent (The "Why")</label>
                     <textarea 
+                      placeholder="e.g. To reclaim absolute focus and mastery over biology." 
                       value={tempWhy} 
-                      onChange={(e) => setTempWhy(e.target.value)} 
-                      placeholder="Why are you doing this? (Used for AI Motivation)"
-                      className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold min-h-[100px] outline-none focus:border-primary/50 transition-colors resize-none leading-relaxed" 
+                      onChange={(e) => setTempWhy(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none min-h-[100px] resize-none"
                     />
+                    <p className="text-[9px] font-medium text-slate-400 px-1">This grounds your journey and hyper-personalizes AI motivation.</p>
                   </div>
-                  <button onClick={handleIdentitySubmit} className="w-full bg-text text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-slate-900/10 hover:bg-primary hover:text-black transition-all active:scale-[0.98]">
-                    Update Profile
+                  <button 
+                    onClick={handleIdentitySubmit}
+                    className="w-full bg-primary text-white py-4 rounded-2xl font-black text-xs hover:bg-primary/90 active:scale-95 transition-all shadow-lg shadow-primary/20"
+                  >
+                    Save Identity
                   </button>
                </div>
             </div>
 
-            <div className="bg-surface p-6 rounded-[32px] border border-slate-200 shadow-sm">
-               <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-6 flex items-center gap-2">
-                 <Shield size={14} /> Application
+            <div className="bg-surface p-6 rounded-3xl border border-slate-200 shadow-sm">
+               <h3 className="text-[10px] font-black mb-4 text-secondary uppercase tracking-widest flex items-center gap-2">
+                 <Award size={14} className="text-primary" /> Mastery Ranks Reference
                </h3>
                <div className="flex flex-col gap-3">
-                  <div className="p-4 bg-slate-50 rounded-2xl flex justify-between items-center">
-                     <span className="text-xs font-bold text-slate-500">Version</span>
-                     <span className="text-xs font-black">{APP_VERSION}</span>
-                  </div>
-                  {user && (
-                    <div className="p-4 bg-slate-50 rounded-2xl flex justify-between items-center overflow-hidden">
-                       <span className="text-xs font-bold text-slate-500 shrink-0">Account</span>
-                       <span className="text-[10px] font-bold text-slate-400 truncate ml-4">{user.email || 'Anonymous'}</span>
+                  {dynamicRanks.map((rank) => (
+                    <div key={rank.level} className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-xl bg-white shadow-sm" style={{ color: rank.color }}>
+                          <rank.icon size={16} />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-xs font-black text-text uppercase tracking-tight">{rank.name}</span>
+                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{Math.round(rank.factor * 100)}% of Goal</span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-sm font-black text-primary">{rank.minDays}</span>
+                        <span className="text-[8px] font-black text-secondary uppercase ml-1">Days</span>
+                      </div>
                     </div>
-                  )}
+                  ))}
+                  <div className="mt-2 bg-primary/5 rounded-xl p-3 flex gap-3 items-start border border-primary/10">
+                     <div className="shrink-0 mt-0.5"><Info size={14} className="text-primary" /></div>
+                     <p className="text-[10px] font-medium text-slate-500 leading-relaxed">
+                       Ranks adjust dynamically as you change your <strong className="text-text">Target Threshold</strong>. Reaching your goal signifies hitting the <strong className="text-text">Mastery</strong> rank.
+                     </p>
+                  </div>
                </div>
             </div>
-            
-            <div className="p-6 rounded-[32px] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-center gap-2 opacity-60">
-                <Info size={20} className="text-slate-400" />
-                <p className="text-[10px] font-bold text-slate-400 max-w-[200px] leading-relaxed">
-                   "Mastery is the art of approaching the edge but refusing the demand to spill over."
-                </p>
+
+            <div className="bg-surface p-6 rounded-3xl border border-slate-200">
+               <h3 className="text-[10px] font-black mb-4 text-secondary uppercase tracking-widest">Access</h3>
+               {user ? (
+                 <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl">
+                    <div className="p-2 bg-primary/10 rounded-full text-primary"><UserIcon size={16} /></div>
+                    <div className="flex flex-col overflow-hidden"><span className="text-[10px] font-bold text-secondary uppercase">Authenticated as</span><span className="text-xs font-bold truncate text-text">{user.email}</span></div>
+                 </div>
+               ) : <button onClick={handleSignIn} className="w-full bg-primary text-white font-black py-4 rounded-2xl shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform">Connect Google Profile</button>}
             </div>
           </div>
         )}
       </main>
 
-      <nav className="fixed bottom-0 w-full bg-surface/90 backdrop-blur-lg border-t border-slate-100 pb-safe z-40">
-        <div className="max-w-md mx-auto flex justify-around p-2">
-          <NavButton active={view === 'dashboard'} onClick={() => setView('dashboard')} icon={Shield} label="Journey" />
-          <NavButton active={view === 'history'} onClick={() => setView('history')} icon={HistoryIcon} label="History" />
-          <NavButton active={view === 'settings'} onClick={() => setView('settings')} icon={Settings} label="Config" />
+      {/* Milestone Celebration Modal */}
+      {isCelebrating && celebration && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-6 animate-fade-in">
+           <div className="bg-white rounded-[40px] p-10 max-w-sm w-full shadow-2xl relative text-center flex flex-col items-center">
+              <div className="absolute top-[-40px] p-6 bg-primary text-white rounded-full shadow-xl shadow-primary/30 border-4 border-white">
+                <Trophy size={48} />
+              </div>
+              <h2 className="text-3xl font-black text-text mt-8 mb-2">{celebration.title}</h2>
+              <div className="w-12 h-1 bg-primary rounded-full mb-6"></div>
+              <p className="text-lg font-bold text-slate-700 leading-relaxed italic mb-8">
+                "{celebration.message}"
+              </p>
+              <div className="w-full bg-slate-50 p-6 rounded-3xl border border-slate-100 flex flex-col gap-2">
+                 <div className="flex items-center justify-center gap-2 mb-1">
+                   <Crown size={14} className="text-primary" />
+                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Mastery Insight</span>
+                 </div>
+                 <p className="text-xs font-semibold text-slate-500">{celebration.rankInsight}</p>
+              </div>
+              <button 
+                onClick={() => setIsCelebrating(false)} 
+                className="w-full py-4 bg-primary text-white rounded-2xl font-black text-sm mt-8 shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
+              >
+                Continue The Path
+              </button>
+           </div>
         </div>
-      </nav>
+      )}
 
-      {/* --- MODALS --- */}
+      {/* Selected Day Details Modal */}
+      {selectedDayDetails && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] flex items-center justify-center p-6 animate-fade-in">
+           <div className="bg-white rounded-[32px] p-8 max-w-sm w-full shadow-2xl relative">
+              <button onClick={() => setSelectedDayDetails(null)} className="absolute top-4 right-4 text-slate-400 hover:text-text"><X size={20} /></button>
+              <div className="flex flex-col items-center text-center gap-2">
+                 <div className="p-3 bg-primary/10 rounded-2xl text-primary mb-2"><CalendarIcon size={24} /></div>
+                 <h3 className="text-xl font-black text-text mb-1">{selectedDayDetails.date}</h3>
+                 <div className="flex gap-2 mb-4">
+                     {selectedDayDetails.statuses.map((status, idx) => (
+                        <span key={idx} className={`text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border ${status === 'Current' ? 'bg-primary/10 text-primary border-primary/20' : status === 'Past' ? 'bg-amber-100 text-amber-800 border-amber-200' : 'bg-gradient-to-r from-amber-100 to-emerald-100 text-slate-800 border-slate-200'}`}>{status}</span>
+                     ))}
+                 </div>
+                 <div className="w-full flex flex-col gap-2">{selectedDayDetails.details.map((detail, idx) => <div key={idx} className="bg-slate-50 p-3 rounded-xl border border-slate-100 text-sm font-medium text-slate-600">{detail}</div>)}</div>
+              </div>
+           </div>
+        </div>
+      )}
 
-      {/* Reset Confirmation Modal */}
-      {showResetConfirm && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6 animate-fade-in">
-          <div className="bg-white rounded-[32px] p-8 max-w-sm w-full shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-red-500 to-orange-500"></div>
-            <h3 className="text-2xl font-black mb-4 text-center text-text mt-2">Reset Journey?</h3>
-            <p className="text-slate-500 text-sm mb-8 text-center leading-relaxed px-4">
-              Honesty is the foundation of mastery. This will reset your streak to 0 and log the previous run.
-            </p>
-            <div className="flex gap-3">
-              <button onClick={() => setShowResetConfirm(false)} className="flex-1 p-4 bg-slate-100 rounded-2xl font-bold hover:bg-slate-200 transition-colors text-xs uppercase tracking-widest">Cancel</button>
-              <button onClick={handleReset} className="flex-1 p-4 bg-red-500 text-white rounded-2xl font-black hover:bg-red-600 transition-colors text-xs uppercase tracking-widest shadow-lg shadow-red-500/20">Confirm Reset</button>
-            </div>
+      {/* Install Instruction Modal */}
+      {showInstallModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] flex items-center justify-center p-6 animate-fade-in">
+           <div className="bg-white rounded-[32px] p-8 max-w-sm w-full shadow-2xl relative">
+              <button onClick={() => setShowInstallModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-text"><X size={20} /></button>
+              <div className="flex flex-col items-center text-center gap-4">
+                 <div className="p-4 bg-primary/10 rounded-2xl text-primary mb-2"><Download size={32} /></div>
+                 <h3 className="text-xl font-black text-text">Initialize App</h3>
+                 <p className="text-sm text-secondary font-medium leading-relaxed">To install Streaker on your device, tap the <strong className="text-text">Share</strong> button in your browser menu and select <strong className="text-text">Add to Home Screen</strong>.</p>
+                 <div className="w-full bg-slate-50 rounded-xl p-4 flex flex-col gap-3 mt-2 border border-slate-100">
+                    <div className="flex items-center gap-3 text-xs font-bold text-slate-500"><Share size={16} className="text-primary" /><span>1. Tap Share</span></div>
+                    <div className="w-full h-px bg-slate-200"></div>
+                    <div className="flex items-center gap-3 text-xs font-bold text-slate-500"><PlusSquare size={16} className="text-primary" /><span>2. Add to Home Screen</span></div>
+                 </div>
+                 <button onClick={() => setShowInstallModal(false)} className="w-full py-3 bg-primary text-white rounded-xl font-black text-sm mt-2">Understood</button>
+              </div>
+           </div>
+        </div>
+      )}
+
+      {/* Edit Start Date Modal */}
+      {isEditingStart && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] flex items-center justify-center p-6 animate-fade-in">
+          <div className="bg-white rounded-[32px] p-8 max-w-sm w-full shadow-2xl">
+            <h3 className="text-2xl font-black mb-6">Update Start</h3>
+            <div className="mb-8"><input type="date" value={tempStart} onChange={e => setTempStart(e.target.value)} className="w-full p-4 bg-slate-50 rounded-2xl text-center font-bold text-lg" /></div>
+            <div className="flex gap-3"><button onClick={() => setIsEditingStart(false)} className="flex-1 p-4 bg-slate-100 rounded-2xl font-bold">Cancel</button><button onClick={handleStartSubmit} className="flex-1 p-4 bg-primary text-white rounded-2xl font-black">Adjust Path</button></div>
           </div>
         </div>
       )}
 
       {/* Edit Goal Modal */}
       {isEditingGoal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6 animate-fade-in">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] flex items-center justify-center p-6 animate-fade-in">
           <div className="bg-white rounded-[32px] p-8 max-w-sm w-full shadow-2xl">
-            <h3 className="text-2xl font-black mb-6 text-text">Set Target</h3>
-            
-            <div className="flex bg-slate-100 p-1 rounded-xl mb-6">
-               <button 
-                 onClick={() => setGoalMode('days')} 
-                 className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${goalMode === 'days' ? 'bg-white shadow-sm text-text' : 'text-slate-400'}`}
-               >
-                 Duration
-               </button>
-               <button 
-                 onClick={() => setGoalMode('date')} 
-                 className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${goalMode === 'date' ? 'bg-white shadow-sm text-text' : 'text-slate-400'}`}
-               >
-                 End Date
-               </button>
-            </div>
-
-            <div className="mb-8">
-               {goalMode === 'days' ? (
-                 <div className="flex flex-col gap-2">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Target Days</label>
-                    <input 
-                      type="number" 
-                      value={tempGoal} 
-                      onChange={(e) => setTempGoal(e.target.value)} 
-                      className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-4 text-xl font-black outline-none focus:border-primary/50 transition-colors text-center" 
-                    />
-                 </div>
-               ) : (
-                 <div className="flex flex-col gap-2">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Target Date</label>
-                    <input 
-                      type="date" 
-                      value={tempGoalDate} 
-                      onChange={(e) => setTempGoalDate(e.target.value)} 
-                      className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-4 text-lg font-bold outline-none focus:border-primary/50 transition-colors text-center" 
-                    />
-                 </div>
-               )}
-            </div>
-
-            <div className="flex gap-3">
-              <button onClick={() => setIsEditingGoal(false)} className="flex-1 p-4 bg-slate-100 rounded-2xl font-bold hover:bg-slate-200 transition-colors text-xs uppercase tracking-widest">Cancel</button>
-              <button onClick={handleGoalSubmit} className="flex-1 p-4 bg-primary text-white rounded-2xl font-black hover:bg-[#b5952f] transition-colors text-xs uppercase tracking-widest shadow-lg shadow-primary/20">Save Target</button>
-            </div>
+            <h3 className="text-2xl font-black mb-6">Target Threshold</h3>
+            <div className="flex bg-slate-100 p-1 rounded-2xl mb-6"><button onClick={() => setGoalMode('days')} className={`flex-1 py-3 rounded-xl text-xs font-black ${goalMode === 'days' ? 'bg-white text-primary' : ''}`}>Days</button><button onClick={() => setGoalMode('date')} className={`flex-1 py-3 rounded-xl text-xs font-black ${goalMode === 'date' ? 'bg-white text-primary' : ''}`}>Date</button></div>
+            <div className="mb-8">{goalMode === 'days' ? <input type="number" value={tempGoal} onChange={e => setTempGoal(e.target.value)} className="w-full p-4 bg-slate-50 rounded-2xl text-center text-2xl font-black" /> : <input type="date" value={tempGoalDate} onChange={e => setTempGoalDate(e.target.value)} className="w-full p-4 bg-slate-50 rounded-2xl text-center" />}</div>
+            <div className="flex gap-3"><button onClick={() => setIsEditingGoal(false)} className="flex-1 p-4 bg-slate-100 rounded-2xl font-bold">Cancel</button><button onClick={handleGoalSubmit} className="flex-1 p-4 bg-primary text-white rounded-2xl font-black">Set Target</button></div>
           </div>
         </div>
       )}
 
-      {/* Add History Modal */}
+      {/* Manual History Modal */}
       {isAddingHistory && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] flex items-center justify-center p-6 animate-fade-in">
+          <div className="bg-white rounded-[32px] p-8 max-w-sm w-full shadow-2xl">
+            <h3 className="text-2xl font-black mb-6">Log Past Mastery</h3>
+            <div className="space-y-4 mb-8">
+              <input type="date" value={manualStart} onChange={e => setManualStart(e.target.value)} className="w-full p-4 bg-slate-50 rounded-2xl border-2 border-slate-100" />
+              <input type="date" value={manualEnd} onChange={e => setManualEnd(e.target.value)} className="w-full p-4 bg-slate-50 rounded-2xl border-2 border-slate-100" />
+            </div>
+            <div className="flex gap-3"><button onClick={() => setIsAddingHistory(false)} className="flex-1 p-4 bg-slate-100 rounded-2xl font-bold">Cancel</button><button onClick={handleManualHistorySubmit} className="flex-1 p-4 bg-primary text-white rounded-2xl font-black">Store Log</button></div>
+          </div>
+        </div>
+      )}
+
+      {/* Reset Confirmation Modal */}
+      {showResetConfirm && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6 animate-fade-in">
           <div className="bg-white rounded-[32px] p-8 max-w-sm w-full shadow-2xl">
-            <h3 className="text-2xl font-black mb-6 text-text">Log Past Journey</h3>
-            
-            <div className="flex flex-col gap-4 mb-8">
-               <div className="flex flex-col gap-2">
-                 <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Start Date</label>
-                 <input type="date" value={manualStart} onChange={(e) => setManualStart(e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold outline-none focus:border-primary/50 transition-colors" />
-               </div>
-               <div className="flex flex-col gap-2">
-                 <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">End Date</label>
-                 <input type="date" value={manualEnd} onChange={(e) => setManualEnd(e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold outline-none focus:border-primary/50 transition-colors" />
-               </div>
-            </div>
-
-            <div className="flex gap-3">
-              <button onClick={() => setIsAddingHistory(false)} className="flex-1 p-4 bg-slate-100 rounded-2xl font-bold hover:bg-slate-200 transition-colors text-xs uppercase tracking-widest">Cancel</button>
-              <button onClick={handleManualHistorySubmit} className="flex-1 p-4 bg-primary text-white rounded-2xl font-black hover:bg-[#b5952f] transition-colors text-xs uppercase tracking-widest shadow-lg shadow-primary/20">Add Entry</button>
-            </div>
+            <h3 className="text-2xl font-black mb-4 text-center text-danger">Relapse?</h3>
+            <p className="text-slate-500 text-sm mb-8 text-center leading-relaxed">Discipline lapsed. Re-centering the system. History will be archived for re-analysis.</p>
+            <div className="flex gap-3"><button onClick={() => setShowResetConfirm(false)} className="flex-1 p-4 bg-slate-100 rounded-2xl font-bold">Cancel</button><button onClick={handleReset} className="flex-1 p-4 bg-danger text-white rounded-2xl font-black">Confirm Relapse</button></div>
           </div>
         </div>
       )}
 
-      {/* Edit Start Date Modal */}
-      {isEditingStart && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6 animate-fade-in">
-          <div className="bg-white rounded-[32px] p-8 max-w-sm w-full shadow-2xl">
-            <h3 className="text-2xl font-black mb-6 text-text">Adjust Start Date</h3>
-            <p className="text-xs text-slate-500 mb-6 leading-relaxed">
-               Modify the start date of your <b>current</b> journey.
-            </p>
-            <div className="flex flex-col gap-2 mb-8">
-               <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Start Date</label>
-               <input type="date" value={tempStart} onChange={(e) => setTempStart(e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold outline-none focus:border-primary/50 transition-colors" />
-            </div>
-
-            <div className="flex gap-3">
-              <button onClick={() => setIsEditingStart(false)} className="flex-1 p-4 bg-slate-100 rounded-2xl font-bold hover:bg-slate-200 transition-colors text-xs uppercase tracking-widest">Cancel</button>
-              <button onClick={handleStartSubmit} className="flex-1 p-4 bg-primary text-white rounded-2xl font-black hover:bg-[#b5952f] transition-colors text-xs uppercase tracking-widest shadow-lg shadow-primary/20">Update</button>
-            </div>
-          </div>
+      <nav className="fixed bottom-0 w-full bg-white/95 backdrop-blur-md border-t border-slate-100 pb-safe z-50">
+        <div className="max-w-md mx-auto flex justify-around p-3">
+          <NavButton active={view === 'dashboard'} onClick={() => setView('dashboard')} icon={Shield} label="Journey" />
+          <NavButton active={view === 'history'} onClick={() => setView('history')} icon={HistoryIcon} label="Logs" />
+          <NavButton active={view === 'settings'} onClick={() => setView('settings')} icon={Settings} label="Config" />
         </div>
-      )}
-
-      {/* Install Modal */}
-      {showInstallModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6 animate-fade-in">
-          <div className="bg-white rounded-[32px] p-8 max-w-sm w-full shadow-2xl relative">
-            <button onClick={() => setShowInstallModal(false)} className="absolute top-4 right-4 p-2 text-slate-300 hover:text-slate-500"><X size={20}/></button>
-            <div className="flex justify-center mb-6">
-               <Logo className="w-20 h-20" />
-            </div>
-            <h3 className="text-xl font-black mb-3 text-center">Install Streaker</h3>
-            <p className="text-sm text-slate-500 text-center mb-6 leading-relaxed">
-              For the best experience, add this app to your home screen.
-            </p>
-            
-            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 mb-6">
-               <div className="flex items-center gap-3 mb-2">
-                  <span className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-200 text-[10px] font-bold">1</span>
-                  <span className="text-xs font-bold text-slate-600">Tap the Share button <Share size={12} className="inline ml-1"/></span>
-               </div>
-               <div className="flex items-center gap-3">
-                  <span className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-200 text-[10px] font-bold">2</span>
-                  <span className="text-xs font-bold text-slate-600">Select "Add to Home Screen" <PlusSquare size={12} className="inline ml-1"/></span>
-               </div>
-            </div>
-            
-            <button onClick={() => setShowInstallModal(false)} className="w-full p-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest">Got it</button>
-          </div>
-        </div>
-      )}
-
-      {/* Celebration Modal */}
-      {isCelebrating && celebration && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[110] flex items-center justify-center p-6 animate-fade-in">
-           <div className="bg-surface rounded-[40px] p-8 max-w-sm w-full shadow-2xl border border-primary/20 relative overflow-hidden flex flex-col items-center text-center">
-              {/* Background Effects */}
-              <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] bg-[radial-gradient(circle,rgba(212,175,55,0.15)_0%,transparent_70%)] animate-pulse"></div>
-              
-              <div className="relative z-10 mb-4 bg-primary/10 p-4 rounded-full text-primary">
-                 <Trophy size={48} strokeWidth={1.5} />
-              </div>
-
-              <h2 className="relative z-10 text-3xl font-black text-text mb-2 uppercase tracking-tight">{celebration.title}</h2>
-              <div className="w-12 h-1 bg-primary rounded-full mb-6"></div>
-
-              <p className="relative z-10 text-lg font-bold text-slate-700 leading-relaxed mb-6 italic">
-                "{celebration.message}"
-              </p>
-
-              <div className="relative z-10 bg-slate-50 p-4 rounded-2xl border border-slate-100 mb-8 w-full">
-                 <div className="flex items-center justify-center gap-2 mb-2">
-                    <Crown size={14} className="text-primary" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-primary">Mastery Insight</span>
-                 </div>
-                 <p className="text-xs font-medium text-slate-500">{celebration.rankInsight}</p>
-              </div>
-
-              <button 
-                onClick={() => setIsCelebrating(false)} 
-                className="relative z-10 w-full p-4 bg-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-primary/30 hover:bg-[#b5952f] transition-all active:scale-95"
-              >
-                Claim Victory
-              </button>
-           </div>
-        </div>
-      )}
-
-      {/* Edit History Modal (ADDED THIS BLOCK) */}
-      {isEditingHistory && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6 animate-fade-in">
-          <div className="bg-white rounded-[32px] p-8 max-w-sm w-full shadow-2xl">
-            <h3 className="text-2xl font-black mb-6 text-text">Edit Entry</h3>
-            
-            <div className="flex flex-col gap-4 mb-8">
-               <div className="flex flex-col gap-2">
-                 <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Start Date</label>
-                 <input 
-                   type="date" 
-                   value={editStart} 
-                   onChange={(e) => setEditStart(e.target.value)} 
-                   className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold outline-none focus:border-primary/50 transition-colors"
-                 />
-               </div>
-               <div className="flex flex-col gap-2">
-                 <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">End Date</label>
-                 <input 
-                   type="date" 
-                   value={editEnd} 
-                   onChange={(e) => setEditEnd(e.target.value)} 
-                   className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold outline-none focus:border-primary/50 transition-colors"
-                 />
-               </div>
-            </div>
-
-            <div className="flex gap-3">
-              <button onClick={() => setIsEditingHistory(null)} className="flex-1 p-4 bg-slate-100 rounded-2xl font-bold hover:bg-slate-200 transition-colors text-xs uppercase tracking-widest">Cancel</button>
-              <button onClick={handleEditHistorySubmit} className="flex-1 p-4 bg-primary text-white rounded-2xl font-black hover:bg-[#b5952f] transition-colors text-xs uppercase tracking-widest shadow-lg shadow-primary/20">Save</button>
-            </div>
-          </div>
-        </div>
-      )}
-
+      </nav>
     </div>
   );
 }
+
+const NavButton = ({ active, onClick, icon: Icon, label }: any) => (
+  <button onClick={onClick} className={`flex flex-col items-center justify-center w-full p-2 rounded-2xl transition-all ${active ? 'text-primary bg-primary/5' : 'text-slate-400'}`}>
+    <Icon size={20} strokeWidth={active ? 3 : 2} />
+    <span className="text-[8px] font-black mt-1 uppercase">{label}</span>
+  </button>
+);
